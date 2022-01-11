@@ -1,10 +1,11 @@
 const Discord = require("discord.js");
 require("dotenv").config();
 
-
 const generateIamge = require("./generateImage");
 
 const prefix = "rc!";
+
+const fs = require('fs');
 
 const client = new Discord.Client({
   intents: [
@@ -14,6 +15,13 @@ const client = new Discord.Client({
   ]
 });
 
+client.commands = new Discord.Collection();
+
+const commandFiles = fs.readdirSync("./commands/").filter(file => file.endsWith('.js'));
+for (const file of commandFiles) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.name, command);
+}
 
 client.on("ready", () => {
   console.log(`Loggen in as ${client.user.tag}`);
@@ -27,9 +35,9 @@ client.on("messageCreate", (message) => {
   const command = args.shift().toLowerCase();
 
   if (command === "ping") {
-    message.channel.send("pong");
+    client.commands.get('ping').execute(message, args);
   } else if (command === "youtube") {
-    message.channel.send("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+    client.commands.get("youtube").execute(message, args);
   }
 });
 
