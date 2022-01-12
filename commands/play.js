@@ -4,10 +4,16 @@ const { yt_validate, video_info, search, stream } = require("play-dl");
 // Global queue for your bot. Every server will have a key and value pair in this map. { guild.id, queue_constructor{} }
 const queue = new Map();
 
+const role = "dj";
+
 module.exports = {
   name: "play",
   description: "play youtube videos",
   async execute(message, args) {
+    if (!message.member.roles.cache.some(r => r.name === role)) {
+      message.channel.send(`you need to have the ${role} role to use this command`);
+      return;
+    }
     const voice_channel = message.member.voice.channel;
     if (!voice_channel) return message.channel.send("You need to be in a voice channel to use this command");
 
