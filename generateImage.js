@@ -6,19 +6,19 @@ const background = "https://i.imgur.com/zvWTUVu.jpg";
 const dim = {
   height: 675,
   width: 1200,
-  margin: 50
+  margin: 50,
 };
 
 const av = {
   size: 256,
   x: 480,
-  y: 170
+  y: 170,
 };
 
 const generateImage = async (member) => {
-  let username = member.user.username;
-  let discrim = member.user.discriminator;
-  let avatarURL = member.user.displayAvatarURL({ format: "png", dynamic: false, size: av.size });
+  const username = member.user.username;
+  const discrim = member.user.discriminator;
+  const avatarURL = member.user.displayAvatarURL({ format: "png", dynamic: false, size: av.size });
 
   const canvas = Canvas.createCanvas(dim.width, dim.height);
   const ctx = canvas.getContext("2d");
