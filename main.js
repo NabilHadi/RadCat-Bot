@@ -37,8 +37,7 @@ client.on("messageCreate", (message) => {
 
   if (command === "ping") {
     client.commands.get("ping").execute(message, args);
-  }
-  else if (command === "play") {
+  } else if (command === "play") {
     client.commands.get("play").execute(message, args);
   }
 });

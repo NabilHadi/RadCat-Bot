@@ -19,8 +19,7 @@ module.exports = {
     if (args[0].startsWith("https") && yt_validate(args[0]) === "video") {
       const song_info = await video_info(args[0]);
       song = { title: song_info.video_details.title, url: song_info.video_details.url };
-    }
-    else {
+    } else {
       // If there was no link, we use keywords to search for a video. Set the song object to have two keys. Title and URl.
       const video_finder = async (query) => {
         const video_result = await search(query, { limit: 1 });
@@ -30,8 +29,7 @@ module.exports = {
       const video = await video_finder(args.join(" "));
       if (video) {
         song = { title: video.title, url: video.url };
-      }
-      else {
+      } else {
         message.channel.send("Error finding video.");
       }
     }
@@ -72,14 +70,12 @@ module.exports = {
           video_player(message.guild, queue_constructor.songs[0]);
         });
         video_player(message.guild, queue_constructor.songs[0]);
-      }
-      catch (err) {
+      } catch (err) {
         queue.delete(message.guild.id);
         message.channel.send("There was an error connecting!");
         throw err;
       }
-    }
-    else {
+    } else {
       server_queue.songs.push(song);
       return message.channel.send(`👍 **${song.title}** added to queue!`);
     }
