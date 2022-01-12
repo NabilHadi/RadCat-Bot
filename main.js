@@ -5,19 +5,20 @@ const generateIamge = require("./generateImage");
 
 const prefix = "rc!";
 
-const fs = require('fs');
+const fs = require("fs");
 
 const client = new Discord.Client({
   intents: [
     "GUILDS",
     "GUILD_MESSAGES",
-    "GUILD_MEMBERS"
-  ]
+    "GUILD_MEMBERS",
+    "GUILD_VOICE_STATES",
+  ],
 });
 
 client.commands = new Discord.Collection();
 
-const commandFiles = fs.readdirSync("./commands/").filter(file => file.endsWith('.js'));
+const commandFiles = fs.readdirSync("./commands/").filter(file => file.endsWith(".js"));
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   client.commands.set(command.name, command);
@@ -35,9 +36,10 @@ client.on("messageCreate", (message) => {
   const command = args.shift().toLowerCase();
 
   if (command === "ping") {
-    client.commands.get('ping').execute(message, args);
-  } else if (command === "youtube") {
-    client.commands.get("youtube").execute(message, args);
+    client.commands.get("ping").execute(message, args);
+  }
+  else if (command === "play") {
+    client.commands.get("play").execute(message, args);
   }
 });
 
@@ -47,11 +49,9 @@ client.on("guildMemberAdd", async (member) => {
   const img = await generateIamge(member);
   member.guild.channels.cache.get(welcomeChannelId).send({
     content: `<@${member.id}> Welcome to the server!`,
-    files: [img]
+    files: [img],
   });
 });
-
-
 
 
 client.login(process.env.TOKEN);
