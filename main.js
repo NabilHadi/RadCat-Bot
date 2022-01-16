@@ -6,6 +6,7 @@ const generateIamge = require("./generateImage");
 const prefix = "rc!";
 
 const fs = require("fs");
+const commandDirPath = "./commands/";
 
 const client = new Discord.Client({
   intents: [
@@ -18,10 +19,10 @@ const client = new Discord.Client({
 
 client.commands = new Discord.Collection();
 
-const commandFiles = fs.readdirSync("./commands/").filter(file => file.endsWith(".js"));
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
+const commandFilesNames = fs.readdirSync(commandDirPath).filter(file => file.endsWith(".js"));
+for (const fileName of commandFilesNames) {
+  const commandFile = require(`${commandDirPath}${fileName}`);
+  client.commands.set(commandFile.name, commandFile);
 }
 
 client.on("ready", () => {
@@ -39,6 +40,8 @@ client.on("messageCreate", (message) => {
     client.commands.get("ping").execute(message, args);
   } else if (command === "play") {
     client.commands.get("play").execute(message, args);
+  } else if (command === "leave") {
+    client.commands.get("leave").execute(message, args);
   }
 });
 
