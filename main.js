@@ -17,6 +17,7 @@ const client = new Discord.Client({
   ],
 });
 
+
 client.commands = new Discord.Collection();
 
 const commandFilesNames = fs.readdirSync(commandDirPath).filter(file => file.endsWith(".js"));
