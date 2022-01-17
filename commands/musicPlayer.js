@@ -59,8 +59,7 @@ async function play(message, args) {
       player.on("stateChange", (oldState, newState) => {
         console.log(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
         if (oldState.status === AudioPlayerStatus.Playing && newState.status === AudioPlayerStatus.Idle) {
-          serverQueue.songs.shift();
-          playSong(message.guild.id, serverQueue.songs[0]);
+          playNext(message.guild.id);
         }
       });
       playSong(message.guild.id, serverQueue.songs[0]);
@@ -90,6 +89,13 @@ async function playSong(guildId, song) {
 
   serverQueue.audioPlayer.play(audioResource);
   await serverQueue.textChannel.send(`🎶 Now playing **${song.title}**`);
+}
+
+function playNext(guildId) {
+  const serverQueue = globalServersQueues.get(guildId);
+  serverQueue.audioPlayer.pause();
+  serverQueue.songs.shift();
+  playSong(guildId, serverQueue.songs[0]);
 }
 
 function stopConnection(guildId) {
@@ -149,4 +155,5 @@ module.exports = {
   role,
   play,
   stopConnection,
+  playNext,
 };

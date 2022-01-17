@@ -37,11 +37,13 @@ client.on("messageCreate", (message) => {
   const command = args.shift().toLowerCase();
 
   if (command === "ping") {
-    client.commands.get("ping").execute(message, args);
+    client.commands.get("ping").execute(message);
   } else if (command === "play") {
     client.commands.get("play").execute(message, args);
   } else if (command === "leave") {
-    client.commands.get("leave").execute(message, args);
+    client.commands.get("leave").execute(message);
+  } else if (command === "skip") {
+    client.commands.get("skip").execute(message);
   }
 });
 
