@@ -16,10 +16,10 @@ module.exports = {
     }
 
     if (isPlaying(message.guild.id)) {
-      message.channel.send("Song is alreadying playing");
+      message.channel.send("Song is already playing");
       return;
     } else {
-      if (isThereQueue(message.guild.id)) {
+      if (!isThereQueue(message.guild.id)) {
         message.channel.send("There are no songs available ");
         return;
       }

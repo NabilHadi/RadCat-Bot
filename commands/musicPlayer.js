@@ -13,7 +13,6 @@ async function play(message, args) {
 
   // If the first argument is a link. Set the song object to have two keys. Title and URl.
   if (isValidHttpUrl(args[0])) {
-    console.log("vaild http url");
     const linkType = ytValidate(args[0]);
     if (linkType === "video") {
       const songInfo = await videoInfo(args[0]);
@@ -24,9 +23,7 @@ async function play(message, args) {
       message.channel.send("The link provided is for a playlist, which is not supported currently!");
       return;
     }
-
   } else {
-    console.log("not vaild http url");
     const video = await queryVideo(args.join(" "));
     if (video) {
       song = { title: video.title, url: video.url };
@@ -36,7 +33,7 @@ async function play(message, args) {
     }
   }
 
-  let serverQueue = globalServersQueues.get(message.guild.id);
+  let serverQueue = getServerQueue(message.guild.id);
   // If the server queue does not exist (which doesn't for the first video queued)
   // then create a constructor to be added to our global queue.
   if (!serverQueue) {
@@ -81,7 +78,7 @@ async function playSong(guildId, song) {
     stopConnection(guildId);
     return;
   }
-  const serverQueue = globalServersQueues.get(guildId);
+  const serverQueue = getServerQueue(guildId);
   const source = await stream(song.url);
   const audioResource = createAudioResource(source.stream, {
     inputType: source.type,
@@ -93,34 +90,34 @@ async function playSong(guildId, song) {
 
 function playNext(guildId) {
   pausePlayer(guildId);
-  const serverQueue = globalServersQueues.get(guildId);
+  const serverQueue = getServerQueue(guildId);
   serverQueue.songs.shift();
   playSong(guildId, serverQueue.songs[0]);
 }
 
 function pausePlayer(guildId) {
-  const serverQueue = globalServersQueues.get(guildId);
-  serverQueue.audioPlayer.pause();
+  getServerQueue(guildId).audioPlayer.pause();
 }
 
 function unpausePlayer(guildId) {
-  const serverQueue = globalServersQueues.get(guildId);
-  serverQueue.audioPlayer.unpause();
+  getServerQueue(guildId).audioPlayer.unpause();
 }
 
 function isPlaying(guildId) {
   if (!isThereQueue(guildId)) return false;
-  const serverQueue = globalServersQueues.get(guildId);
-  return serverQueue.audioPlayer.state.status === AudioPlayerStatus.Playing;
+  return getServerQueue(guildId).audioPlayer.state.status === AudioPlayerStatus.Playing;
 }
 
 function isThereQueue(guildId) {
-  const serverQueue = globalServersQueues.get(guildId);
-  return serverQueue === undefined;
+  return getServerQueue(guildId) !== undefined;
+}
+
+function getServerQueue(guildId) {
+  return globalServersQueues.get(guildId);
 }
 
 function stopConnection(guildId) {
-  const serverQueue = globalServersQueues.get(guildId);
+  const serverQueue = getServerQueue(guildId);
   if (!serverQueue) return;
   serverQueue.voiceConnection.destroy();
   serverQueue.audioPlayer.stop();
