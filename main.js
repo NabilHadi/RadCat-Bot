@@ -44,6 +44,10 @@ client.on("messageCreate", (message) => {
     client.commands.get("leave").execute(message);
   } else if (command === "skip") {
     client.commands.get("skip").execute(message);
+  } else if (command === "pause") {
+    client.commands.get("pause").execute(message);
+  } else if (command === "unpause") {
+    client.commands.get("unpause").execute(message);
   }
 });
 

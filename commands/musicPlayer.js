@@ -92,10 +92,31 @@ async function playSong(guildId, song) {
 }
 
 function playNext(guildId) {
+  pausePlayer(guildId);
   const serverQueue = globalServersQueues.get(guildId);
-  serverQueue.audioPlayer.pause();
   serverQueue.songs.shift();
   playSong(guildId, serverQueue.songs[0]);
+}
+
+function pausePlayer(guildId) {
+  const serverQueue = globalServersQueues.get(guildId);
+  serverQueue.audioPlayer.pause();
+}
+
+function unpausePlayer(guildId) {
+  const serverQueue = globalServersQueues.get(guildId);
+  serverQueue.audioPlayer.unpause();
+}
+
+function isPlaying(guildId) {
+  if (!isThereQueue(guildId)) return false;
+  const serverQueue = globalServersQueues.get(guildId);
+  return serverQueue.audioPlayer.state.status === AudioPlayerStatus.Playing;
+}
+
+function isThereQueue(guildId) {
+  const serverQueue = globalServersQueues.get(guildId);
+  return serverQueue === undefined;
 }
 
 function stopConnection(guildId) {
@@ -156,4 +177,8 @@ module.exports = {
   play,
   stopConnection,
   playNext,
+  pausePlayer,
+  unpausePlayer,
+  isPlaying,
+  isThereQueue,
 };
