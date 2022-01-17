@@ -1,4 +1,4 @@
-const { yt_validate: ytValidate, video_info: videoInfo, search, stream } = require("play-dl");
+const { yt_validate: ytValidate, video_info: videoInfo, search, stream, playlist_info: playlistInfo } = require("play-dl");
 const { joinVoiceChannel, createAudioResource, createAudioPlayer, AudioPlayerStatus } = require("@discordjs/voice");
 
 
@@ -19,6 +19,8 @@ async function play(message, args) {
       const songInfo = await videoInfo(args[0]);
       song = { title: songInfo.video_details.title, url: songInfo.video_details.url };
     } else if (linkType === "playlist") {
+      const playlist = await playlistInfo(args[0]);
+      message.channel.send(`Found a playlist with ${playlist.videos.length}`);
       message.channel.send("The link provided is for a playlist, which is not supported currently!");
       return;
     }
@@ -44,25 +46,23 @@ async function play(message, args) {
 
     // Establish a connection and play the song with the videoPlayer function.
     try {
-      const voiceConnection = await createVoiceConnection(
+      const voiceConnection = createVoiceConnection(
         voiceChannel.id,
         voiceChannel.guild.id,
         voiceChannel.guild.voiceAdapterCreator);
 
+      serverQueue.voiceConnection = voiceConnection;
       const player = createAudioPlayer();
       serverQueue.audioPlayer = player;
-      serverQueue.voiceConnection = voiceConnection;
       serverQueue.voiceConnection.subscribe(player);
 
       player.on("stateChange", (oldState, newState) => {
         console.log(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
+        if (oldState.status === AudioPlayerStatus.Playing && newState.status === AudioPlayerStatus.Idle) {
+          serverQueue.songs.shift();
+          playSong(message.guild.id, serverQueue.songs[0]);
+        }
       });
-
-      player.on(AudioPlayerStatus.Idle, () => {
-        serverQueue.songs.shift();
-        playSong(message.guild.id, serverQueue.songs[0]);
-      });
-
       playSong(message.guild.id, serverQueue.songs[0]);
     } catch (err) {
       globalServersQueues.delete(message.guild.id);
@@ -87,8 +87,8 @@ async function playSong(guildId, song) {
   const audioResource = createAudioResource(source.stream, {
     inputType: source.type,
   });
-  const player = serverQueue.audioPlayer;
-  player.play(audioResource);
+
+  serverQueue.audioPlayer.play(audioResource);
   await serverQueue.textChannel.send(`🎶 Now playing **${song.title}**`);
 }
 
@@ -114,7 +114,7 @@ function createServerQueue(guildId, voiceChannel, textChannel, voiceConnection =
   return serverQueueConstructor;
 }
 
-async function createVoiceConnection(voiceChannelId, guildId, voiceAdapterCreator) {
+function createVoiceConnection(voiceChannelId, guildId, voiceAdapterCreator) {
   return joinVoiceChannel({
     channelId: voiceChannelId,
     guildId: guildId,
