@@ -1,8 +1,8 @@
 import { ICommand } from "wokcommands";
-import { role, isPlaying, pausePlayer } from "./musicPlayer";
+import { role, playNext } from "./musicPlayer";
 export default {
 	category: "Music",
-	description: "unpause currently audioplayer", // Required for slash commands
+	description: "skip currently playing song", // Required for slash commands
 
 	slash: false, // Create both a slash and legacy command
 	testOnly: true, // Only register a slash command for the testing guilds
@@ -23,13 +23,7 @@ export default {
 			// TODO: check whither the voice channel the member is in, matches
 			// the voice channel the bot is in.
 
-			if (isPlaying(guild.id)) {
-				pausePlayer(guild.id);
-				message.reply("Song has been paused");
-			} else {
-				message.reply("Nothing is playing right now!");
-				return;
-			}
+			playNext(guild.id);
 		}
 	},
 } as ICommand;

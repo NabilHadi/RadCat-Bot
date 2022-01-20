@@ -1,6 +1,5 @@
-import { VoiceChannel } from "discord.js";
 import { ICommand } from "wokcommands";
-import { role, play, isPlaying, pausePlayer } from "./musicPlayer";
+import { role, isPlaying, pausePlayer } from "./musicPlayer";
 export default {
 	category: "Music",
 	description: "pause currently playing song", // Required for slash commands

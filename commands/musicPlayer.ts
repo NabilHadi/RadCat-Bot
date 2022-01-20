@@ -141,7 +141,7 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 	await serverQueue?.textChannel.send(`🎶 Now playing **${song.title}**`);
 }
 
-function playNext(guildId: Snowflake) {
+export function playNext(guildId: Snowflake) {
 	pausePlayer(guildId);
 	const serverQueue = getServerQueue(guildId);
 	serverQueue?.songs.shift();

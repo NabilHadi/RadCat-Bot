@@ -1,4 +1,4 @@
-import DiscordJS, { Intents, Interaction } from "discord.js";
+import DiscordJS, { Intents } from "discord.js";
 import WOKCommands from "wokcommands";
 import path from "path";
 import dotenv from "dotenv";
