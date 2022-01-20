@@ -1,4 +1,6 @@
-import DiscordJS, { Intents } from "discord.js";
+import DiscordJS, { Intents, Interaction } from "discord.js";
+import WOKCommands from "wokcommands";
+import path from "path";
 import dotenv from "dotenv";
 import fs from "fs";
 dotenv.config();
@@ -26,7 +28,13 @@ for (const fileName of commandFilesNames) {
 }
 
 client.on("ready", () => {
-	console.log("Bot is ready!");
+	const guildId = "531492104309047307";
+	new WOKCommands(client, {
+		commandsDir: path.join(__dirname, "commands"),
+		typeScript: true,
+
+		testServers: [`${guildId}`],
+	});
 });
 
 client.on("messageCreate", (message) => {
