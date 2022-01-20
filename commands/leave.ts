@@ -1,5 +1,5 @@
 import { ICommand } from "wokcommands";
-import { role, stopConnection } from "./musicPlayer";
+import { role, stopConnection } from "../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "stop playing music and leave voice channel", // Required for slash commands

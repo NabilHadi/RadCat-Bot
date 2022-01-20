@@ -1,6 +1,6 @@
 import { VoiceChannel } from "discord.js";
 import { ICommand } from "wokcommands";
-import { role, play } from "./musicPlayer";
+import { role, play } from "../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "play youtube videos", // Required for slash commands

@@ -1,5 +1,5 @@
 import { ICommand } from "wokcommands";
-import { role, playNext } from "./musicPlayer";
+import { role, playNext } from "../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "skip currently playing song", // Required for slash commands

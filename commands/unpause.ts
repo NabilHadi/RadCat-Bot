@@ -1,5 +1,5 @@
 import { ICommand } from "wokcommands";
-import { role, isPlaying, pausePlayer } from "./musicPlayer";
+import { role, isPlaying, pausePlayer } from "../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "unpause currently audioplayer", // Required for slash commands
