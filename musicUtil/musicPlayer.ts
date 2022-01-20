@@ -227,7 +227,7 @@ async function queryVideo(query: string, limit = 1) {
 		const infoData = await videoInfo(searchResult[0].url);
 		return infoData.video_details;
 	} else {
-		// TODO
+		// TODO: handle query for more than one video
 	}
 }
 

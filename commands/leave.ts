@@ -20,7 +20,12 @@ export default {
 				return;
 			}
 
+			// TODO: check whither the voice channel the member is in, matches
+			// the voice channel the bot is in.
+
 			stopConnection(guild.id);
 		}
+
+		// TODO: handle slash command interaction
 	},
 } as ICommand;

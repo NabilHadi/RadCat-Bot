@@ -25,5 +25,7 @@ export default {
 
 			playNext(guild.id);
 		}
+
+		// TODO: handle slash command interaction
 	},
 } as ICommand;

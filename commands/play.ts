@@ -22,7 +22,13 @@ export default {
 				message.reply("You need to be in a voice channel to use this command");
 				return;
 			}
+
+			// TODO: check whither the voice channel the member is in, matches
+			// the voice channel the bot is in.
+
 			play(message, args, guild.id, channel, voiceChannel);
 		}
+
+		// TODO: handle slash command interaction
 	},
 } as ICommand;

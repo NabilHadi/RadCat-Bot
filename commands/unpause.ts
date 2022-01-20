@@ -31,5 +31,7 @@ export default {
 				return;
 			}
 		}
+
+		// TODO: handle slash command interaction
 	},
 } as ICommand;
