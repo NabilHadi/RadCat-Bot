@@ -148,15 +148,15 @@ function playNext(guildId: Snowflake) {
 	playSong(guildId, serverQueue?.songs[0]);
 }
 
-function pausePlayer(guildId: Snowflake) {
+export function pausePlayer(guildId: Snowflake) {
 	getServerQueue(guildId)?.audioPlayer?.pause();
 }
 
-function unpausePlayer(guildId: Snowflake) {
+export function unpausePlayer(guildId: Snowflake) {
 	getServerQueue(guildId)?.audioPlayer?.unpause();
 }
 
-function isPlaying(guildId: Snowflake) {
+export function isPlaying(guildId: Snowflake) {
 	if (!isThereQueue(guildId)) return false;
 	return (
 		getServerQueue(guildId)?.audioPlayer?.state.status ===
@@ -164,7 +164,7 @@ function isPlaying(guildId: Snowflake) {
 	);
 }
 
-function isThereQueue(guildId: string) {
+export function isThereQueue(guildId: string) {
 	return getServerQueue(guildId) !== undefined;
 }
 
@@ -172,7 +172,7 @@ function getServerQueue(guildId: string) {
 	return globalServersQueues.get(guildId);
 }
 
-function stopConnection(guildId: Snowflake) {
+export function stopConnection(guildId: Snowflake) {
 	const serverQueue = getServerQueue(guildId);
 	if (!serverQueue) return;
 	serverQueue.voiceConnection?.destroy();
@@ -242,12 +242,3 @@ function isValidHttpUrl(string: string) {
 
 	return url.protocol === "http:" || url.protocol === "https:";
 }
-
-module.exports = {
-	stopConnection,
-	playNext,
-	pausePlayer,
-	unpausePlayer,
-	isPlaying,
-	isThereQueue,
-};
