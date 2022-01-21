@@ -1,4 +1,10 @@
-import { Message, Snowflake, TextChannel, VoiceChannel } from "discord.js";
+import {
+	GuildMember,
+	Message,
+	Snowflake,
+	TextChannel,
+	VoiceChannel,
+} from "discord.js";
 import {
 	yt_validate as ytValidate,
 	video_info as videoInfo,
@@ -14,6 +20,7 @@ import {
 	createAudioPlayer,
 	AudioPlayerStatus,
 	AudioPlayer,
+	getVoiceConnection,
 } from "@discordjs/voice";
 
 interface Song {
@@ -27,6 +34,21 @@ interface ServerQueue {
 	voiceConnection?: VoiceConnection;
 	audioPlayer?: AudioPlayer;
 	songs: Song[];
+}
+
+interface MusicPermission {
+	hasPermission: boolean;
+	denyReason: {
+		flag: MusicPermissionDenyReason;
+		description: string;
+	};
+}
+
+export enum MusicPermissionDenyReason {
+	NoRole = "NO_ROLE",
+	MemberNotInVoiceChannel = "NOT_IN_VOICE_CHANNEL",
+	MemberNotInSameVoiceChannel = "NOT_IN_SAME_VOICE_CHANNEL",
+	None = "NONE",
 }
 
 export const role = "dj";
@@ -158,10 +180,12 @@ export function unpausePlayer(guildId: Snowflake) {
 
 export function isPlaying(guildId: Snowflake) {
 	if (!isThereQueue(guildId)) return false;
-	return (
-		getServerQueue(guildId)?.audioPlayer?.state.status ===
-		AudioPlayerStatus.Playing
-	);
+	return getAudioPlayerStatus(guildId) === AudioPlayerStatus.Playing;
+}
+
+export function getBotVoiceChannel(guildId: Snowflake) {
+	const serverQueue = getServerQueue(guildId);
+	return serverQueue?.voiceChannel;
 }
 
 export function isThereQueue(guildId: string) {
@@ -175,8 +199,8 @@ function getServerQueue(guildId: string) {
 export function stopConnection(guildId: Snowflake) {
 	const serverQueue = getServerQueue(guildId);
 	if (!serverQueue) return;
-	serverQueue.voiceConnection?.destroy();
 	serverQueue.audioPlayer?.stop();
+	serverQueue.voiceConnection?.destroy();
 	globalServersQueues.delete(guildId);
 	console.log(`voice connection stopped for guild id:${guildId}`);
 }
@@ -241,4 +265,71 @@ function isValidHttpUrl(string: string) {
 	}
 
 	return url.protocol === "http:" || url.protocol === "https:";
+}
+
+export function checkMusicPermission(
+	member: GuildMember,
+	shouldBeInSameVoiceChannel: boolean
+): MusicPermission {
+	if (!member.roles.cache.some((r) => r.name === role)) {
+		return {
+			hasPermission: false,
+			denyReason: {
+				flag: MusicPermissionDenyReason.NoRole,
+				description: `you need to have the ${role} role to use this command`,
+			},
+		};
+	} else if (!member.voice.channel) {
+		return {
+			hasPermission: false,
+			denyReason: {
+				flag: MusicPermissionDenyReason.MemberNotInVoiceChannel,
+				description: "You need to be in a voice channel to use this command",
+			},
+		};
+	} else if (shouldBeInSameVoiceChannel) {
+		const guildId = member.guild.id;
+		const botVoiceChannel = getBotVoiceChannel(guildId);
+
+		if (!botVoiceChannel) {
+			return {
+				hasPermission: true,
+				denyReason: {
+					flag: MusicPermissionDenyReason.None,
+					description: "",
+				},
+			};
+		} else {
+			if (botVoiceChannel.id === member.voice.channel.id) {
+				return {
+					hasPermission: true,
+					denyReason: {
+						flag: MusicPermissionDenyReason.None,
+						description: "",
+					},
+				};
+			} else {
+				return {
+					hasPermission: false,
+					denyReason: {
+						flag: MusicPermissionDenyReason.MemberNotInSameVoiceChannel,
+						description:
+							"You have to be in the same voice channel as the bot to use this command",
+					},
+				};
+			}
+		}
+	} else {
+		return {
+			hasPermission: true,
+			denyReason: {
+				flag: MusicPermissionDenyReason.None,
+				description: "",
+			},
+		};
+	}
+}
+
+export function getAudioPlayerStatus(guildId: Snowflake) {
+	return getServerQueue(guildId)?.audioPlayer?.state.status;
 }

@@ -1,36 +1,41 @@
+import { AudioPlayerStatus } from "@discordjs/voice";
 import { ICommand } from "wokcommands";
-import { role, isPlaying, pausePlayer } from "../musicUtil/musicPlayer";
+import {
+	isPlaying,
+	checkMusicPermission,
+	unpausePlayer,
+	getAudioPlayerStatus,
+} from "../musicUtil/musicPlayer";
 export default {
 	category: "Music",
-	description: "unpause currently audioplayer", // Required for slash commands
+	description: "unpause music player", // Required for slash commands
 
 	slash: false, // Create both a slash and legacy command
 	testOnly: true, // Only register a slash command for the testing guilds
 
-	callback: ({ message, interaction, guild }) => {
-		if (message != null && message.member != null && guild != null) {
-			if (!message.member.roles.cache.some((r) => r.name === role)) {
-				message.reply(`you need to have the ${role} role to use this command`);
-				return;
-			}
+	callback: ({ message, interaction, guild, member }) => {
+		if (guild === null) return;
 
-			const voice_channel = message.member.voice.channel;
-			if (!voice_channel) {
-				message.reply("You need to be in a voice channel to use this command");
-				return;
-			}
+		const permission = checkMusicPermission(member, true);
 
-			// TODO: check whither the voice channel the member is in, matches
-			// the voice channel the bot is in.
-
-			if (isPlaying(guild.id)) {
-				pausePlayer(guild.id);
-				message.reply("Song has been paused");
-			} else {
-				message.reply("Nothing is playing right now!");
-				return;
-			}
+		console.log(permission);
+		if (permission.hasPermission === false) {
+			message.reply(permission.denyReason.description);
+			return;
 		}
+
+		if (isPlaying(guild.id) === true) {
+			message.reply("Music is already playing!");
+			return;
+		}
+
+		if (getAudioPlayerStatus(guild.id) !== AudioPlayerStatus.Paused) {
+			message.reply("Nothing there to unpause!");
+			return;
+		}
+
+		unpausePlayer(guild.id);
+		message.reply("Unpausing...");
 
 		// TODO: handle slash command interaction
 	},
