@@ -33,7 +33,7 @@ client.on("ready", () => {
 		commandsDir: path.join(__dirname, "commands"),
 		typeScript: true,
 
-		testServers: [`${guildId}`],
+		testServers: [`${guildId}`, "590228866606563333"],
 	});
 });
 
