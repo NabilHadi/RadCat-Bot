@@ -26,7 +26,7 @@ import {
 interface Song {
 	title?: string;
 	url?: string;
-	length?: number;
+	length?: string;
 }
 
 interface ServerQueue {
@@ -65,19 +65,17 @@ export async function play(
 	voiceChannel: VoiceChannel
 ) {
 	if (!message) return;
-	let song: Song = {
-		title: "",
-		url: "",
-	};
+	let song: Song = {};
 	// If the first argument is a link. Set the song object to have two keys. Title and URl.
 	if (isValidHttpUrl(args[0])) {
 		const linkType = ytValidate(args[0]);
 		if (linkType === "video") {
 			const songInfo = await videoInfo(args[0]);
+			console.log(songInfo.video_details.durationRaw);
 			song = {
 				title: songInfo.video_details.title,
 				url: songInfo.video_details.url,
-				length: songInfo.video_details.durationInSec,
+				length: songInfo.video_details.durationRaw,
 			};
 		} else if (linkType === "playlist") {
 			const playlist = await playlistInfo(args[0]);
@@ -92,10 +90,11 @@ export async function play(
 	} else {
 		const video = await queryVideo(args.join(" "));
 		if (video) {
+			console.log(video.durationRaw);
 			song = {
 				title: video.title,
 				url: video.url,
-				length: video.durationInSec,
+				length: video.durationRaw,
 			};
 		} else {
 			textChannel.send("Error finding video.");
@@ -167,7 +166,7 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 
 	serverQueue?.audioPlayer?.play(audioResource);
 	await serverQueue?.textChannel.send(
-		`🎶 Now playing **${song.title}** for ${song.length} seconds!`
+		`🎶 Now playing **${song.title}** for **${song.length}**`
 	);
 }
 
