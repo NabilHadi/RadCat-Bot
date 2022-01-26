@@ -166,7 +166,7 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 
 	serverQueue?.audioPlayer?.play(audioResource);
 	await serverQueue?.textChannel.send(
-		`🎶 Now playing **${song.title}** for **${song.length}**`
+		`🎶 Now playing **${song.title}** for **(${song.length})**`
 	);
 }
 
