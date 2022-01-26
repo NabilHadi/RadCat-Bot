@@ -26,6 +26,7 @@ import {
 interface Song {
 	title?: string;
 	url?: string;
+	length?: number;
 }
 
 interface ServerQueue {
@@ -76,6 +77,7 @@ export async function play(
 			song = {
 				title: songInfo.video_details.title,
 				url: songInfo.video_details.url,
+				length: songInfo.video_details.durationInSec,
 			};
 		} else if (linkType === "playlist") {
 			const playlist = await playlistInfo(args[0]);
@@ -90,7 +92,11 @@ export async function play(
 	} else {
 		const video = await queryVideo(args.join(" "));
 		if (video) {
-			song = { title: video.title, url: video.url };
+			song = {
+				title: video.title,
+				url: video.url,
+				length: video.durationInSec,
+			};
 		} else {
 			textChannel.send("Error finding video.");
 			return;
@@ -160,7 +166,9 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 	});
 
 	serverQueue?.audioPlayer?.play(audioResource);
-	await serverQueue?.textChannel.send(`🎶 Now playing **${song.title}**`);
+	await serverQueue?.textChannel.send(
+		`🎶 Now playing **${song.title}** for ${song.length} seconds!`
+	);
 }
 
 export function playNext(guildId: Snowflake) {
