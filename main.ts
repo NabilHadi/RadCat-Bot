@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import fs from "fs";
 dotenv.config();
 
-const prefix = "rc!";
+const prefix = "rc?";
 const commandDirPath = "./commands/";
 
 const client = new DiscordJS.Client({
@@ -34,29 +34,8 @@ client.on("ready", () => {
 		typeScript: true,
 
 		testServers: [`${guildId}`, "590228866606563333"],
-	});
+	}).setDefaultPrefix(prefix);
 });
-
-// client.on("messageCreate", (message) => {
-// 	if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-// 	const args = message.content.slice(prefix.length).split(/ +/);
-// 	const command = args?.shift()?.toLowerCase();
-
-// 	if (command === "ping") {
-// 		commands.get("ping").execute(message);
-// 	} else if (command === "play") {
-// 		commands.get("play").execute(message, args);
-// 	} else if (command === "leave") {
-// 		commands.get("leave").execute(message);
-// 	} else if (command === "skip") {
-// 		commands.get("skip").execute(message);
-// 	} else if (command === "pause") {
-// 		commands.get("pause").execute(message);
-// 	} else if (command === "unpause") {
-// 		commands.get("unpause").execute(message);
-// 	}
-// });
 
 // const generateIamge = require("./generateImage");
 
