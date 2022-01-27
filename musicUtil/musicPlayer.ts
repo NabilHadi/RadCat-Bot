@@ -45,10 +45,17 @@ interface MusicPermission {
 }
 
 export enum MusicPermissionDenyReason {
-	NoRole = "NO_ROLE",
-	MemberNotInVoiceChannel = "NOT_IN_VOICE_CHANNEL",
-	MemberNotInSameVoiceChannel = "NOT_IN_SAME_VOICE_CHANNEL",
-	None = "NONE",
+	NO_ROLE = "no role",
+	NOT_IN_VOICE_CHANNEL = "not in a voice channel",
+	NOT_IN_SAME_VOICE_CHANNEL = "not in the same voice channel",
+	NONE = "none",
+}
+
+enum ArgumentTypes {
+	VIDEO = "video",
+	PLAYLIST = "playlist",
+	SEARCH = "search",
+	ELSE = "else",
 }
 
 export const role = "dj";
@@ -68,7 +75,18 @@ export async function play(
 	let song: Song;
 	let serverQueue;
 	try {
-		const songPromise = fetchSong(args);
+		const argumentType = getArgumentType(args);
+		if (argumentType === ArgumentTypes.PLAYLIST) {
+			throw new Error(
+				"The link provided is for a playlist, which is not supported currently!"
+			);
+		}
+
+		if (argumentType === ArgumentTypes.ELSE) {
+			throw new Error("Provided link is not supported yet");
+		}
+
+		const songPromise = fetchSong(args, argumentType);
 		serverQueue = getServerQueue(guildId);
 		if (serverQueue) {
 			song = await songPromise;
@@ -123,9 +141,11 @@ export async function play(
 	}
 }
 
-async function fetchSong(args: string[]): Promise<Song> {
-	// If is not url then it it a search query
-	if (!isValidHttpUrl(args[0])) {
+async function fetchSong(
+	args: string[],
+	argumentType: ArgumentTypes.SEARCH | ArgumentTypes.VIDEO
+): Promise<Song> {
+	if (argumentType === ArgumentTypes.SEARCH) {
 		const queryString = args.join(" ");
 		const videoQuery = await queryVideo(queryString);
 		return {
@@ -133,25 +153,22 @@ async function fetchSong(args: string[]): Promise<Song> {
 			url: videoQuery.url,
 			length: videoQuery.durationRaw,
 		};
-	}
-
-	const linkType = ytValidate(args[0]);
-	if (linkType === "video") {
+	} else if (argumentType === ArgumentTypes.VIDEO) {
 		const songInfo = await videoInfo(args[0]);
 		return {
 			title: songInfo.video_details.title,
 			url: songInfo.video_details.url,
 			length: songInfo.video_details.durationRaw,
 		};
-	}
+	} else throw new Error("Provided link/query is not supported yet");
+}
 
-	if (linkType === "playlist") {
-		throw new Error(
-			"The link provided is for a playlist, which is not supported currently!"
-		);
-	} else {
-		throw new Error("Provided link is not supported yet");
-	}
+function getArgumentType(args: string[]): ArgumentTypes {
+	if (!isValidHttpUrl(args[0])) return ArgumentTypes.SEARCH;
+	const linkType = ytValidate(args[0]);
+	if (linkType === "video") return ArgumentTypes.VIDEO;
+	else if (linkType === "playlist") return ArgumentTypes.PLAYLIST;
+	else return ArgumentTypes.ELSE;
 }
 
 async function playSong(guildId: Snowflake, song: Song | undefined) {
@@ -277,7 +294,7 @@ export function checkMusicPermission(
 		return {
 			hasPermission: false,
 			denyReason: {
-				flag: MusicPermissionDenyReason.NoRole,
+				flag: MusicPermissionDenyReason.NO_ROLE,
 				description: `you need to have the ${role} role to use this command`,
 			},
 		};
@@ -285,7 +302,7 @@ export function checkMusicPermission(
 		return {
 			hasPermission: false,
 			denyReason: {
-				flag: MusicPermissionDenyReason.MemberNotInVoiceChannel,
+				flag: MusicPermissionDenyReason.NOT_IN_VOICE_CHANNEL,
 				description: "You need to be in a voice channel to use this command",
 			},
 		};
@@ -297,7 +314,7 @@ export function checkMusicPermission(
 			return {
 				hasPermission: true,
 				denyReason: {
-					flag: MusicPermissionDenyReason.None,
+					flag: MusicPermissionDenyReason.NONE,
 					description: "",
 				},
 			};
@@ -306,7 +323,7 @@ export function checkMusicPermission(
 				return {
 					hasPermission: true,
 					denyReason: {
-						flag: MusicPermissionDenyReason.None,
+						flag: MusicPermissionDenyReason.NONE,
 						description: "",
 					},
 				};
@@ -314,7 +331,7 @@ export function checkMusicPermission(
 				return {
 					hasPermission: false,
 					denyReason: {
-						flag: MusicPermissionDenyReason.MemberNotInSameVoiceChannel,
+						flag: MusicPermissionDenyReason.NOT_IN_SAME_VOICE_CHANNEL,
 						description:
 							"You have to be in the same voice channel as the bot to use this command",
 					},
@@ -325,7 +342,7 @@ export function checkMusicPermission(
 		return {
 			hasPermission: true,
 			denyReason: {
-				flag: MusicPermissionDenyReason.None,
+				flag: MusicPermissionDenyReason.NONE,
 				description: "",
 			},
 		};
