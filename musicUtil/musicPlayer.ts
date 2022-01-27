@@ -20,13 +20,12 @@ import {
 	createAudioPlayer,
 	AudioPlayerStatus,
 	AudioPlayer,
-	getVoiceConnection,
 } from "@discordjs/voice";
 
 interface Song {
-	title?: string;
-	url?: string;
-	length?: string;
+	title: string | undefined;
+	url: string;
+	length: string;
 }
 
 interface ServerQueue {
@@ -65,46 +64,20 @@ export async function play(
 	voiceChannel: VoiceChannel
 ) {
 	if (!message) return;
-	let song: Song = {};
-	// If the first argument is a link. Set the song object to have two keys. Title and URl.
-	if (isValidHttpUrl(args[0])) {
-		const linkType = ytValidate(args[0]);
-		if (linkType === "video") {
-			const songInfo = await videoInfo(args[0]);
-			console.log(songInfo.video_details.durationRaw);
-			song = {
-				title: songInfo.video_details.title,
-				url: songInfo.video_details.url,
-				length: songInfo.video_details.durationRaw,
-			};
-		} else if (linkType === "playlist") {
-			const playlist = await playlistInfo(args[0]);
-			textChannel.send(`Found a playlist with ${playlist.total_videos}`);
-			textChannel.send(
-				"The link provided is for a playlist, which is not supported currently!"
-			);
-			return;
-		} else {
-			return;
-		}
-	} else {
-		const video = await queryVideo(args.join(" "));
-		if (video) {
-			console.log(video.durationRaw);
-			song = {
-				title: video.title,
-				url: video.url,
-				length: video.durationRaw,
-			};
-		} else {
-			textChannel.send("Error finding video.");
-			return;
-		}
-	}
 
-	if (!song.title || !song.url) {
-		console.log(song.title, song.url);
-		textChannel.send("Error finding video.");
+	let song: Song;
+	try {
+		song = await fetchSong(args);
+		if (!song.title || !song.url) {
+			console.log(song.title, song.url);
+			throw new Error("Error finding video.");
+		}
+	} catch (error) {
+		console.error(error);
+		let eMsg;
+		if (error instanceof Error) eMsg = error.message;
+		else eMsg = String(error);
+		message.reply(eMsg);
 		return;
 	}
 
@@ -148,6 +121,37 @@ export async function play(
 		globalServersQueues.delete(guildId);
 		await message.channel.send("There was an error connecting!");
 		throw err;
+	}
+}
+
+async function fetchSong(args: string[]): Promise<Song> {
+	// If is not url then it it a search query
+	if (!isValidHttpUrl(args[0])) {
+		const queryString = args.join(" ");
+		const videoQuery = await queryVideo(queryString);
+		return {
+			title: videoQuery.title,
+			url: videoQuery.url,
+			length: videoQuery.durationRaw,
+		};
+	}
+
+	const linkType = ytValidate(args[0]);
+	if (linkType === "video") {
+		const songInfo = await videoInfo(args[0]);
+		return {
+			title: songInfo.video_details.title,
+			url: songInfo.video_details.url,
+			length: songInfo.video_details.durationRaw,
+		};
+	}
+
+	if (linkType === "playlist") {
+		throw new Error(
+			"The link provided is for a playlist, which is not supported currently!"
+		);
+	} else {
+		throw new Error("Provided link is not supported yet");
 	}
 }
 
@@ -196,11 +200,11 @@ export function getBotVoiceChannel(guildId: Snowflake) {
 }
 
 export function isThereQueue(guildId: string) {
-	return getServerQueue(guildId) !== undefined;
+	return getServerQueue(guildId) !== null;
 }
 
 function getServerQueue(guildId: string) {
-	return globalServersQueues.get(guildId);
+	return globalServersQueues.get(guildId) || null;
 }
 
 export function stopConnection(guildId: Snowflake) {
@@ -233,8 +237,8 @@ function createServerQueue(
 }
 
 function createVoiceConnection(
-	voiceChannelId: string,
-	guildId: string,
+	voiceChannelId: Snowflake,
+	guildId: Snowflake,
 	voiceAdapterCreator: DiscordGatewayAdapterCreator
 ) {
 	return joinVoiceChannel({
@@ -244,22 +248,14 @@ function createVoiceConnection(
 		selfDeaf: true,
 		selfMute: false,
 	});
-	// return joinVoiceChannel({
-	// 	channelId: voiceChannelId,
-	// 	guildId: guildId,
-	// 	adapterCreator: voiceAdapterCreator,
-	// });
 }
 
 async function queryVideo(query: string, limit = 1) {
-	console.log(`video search query for ${query} with limit: ${limit}`);
+	console.log(`video search query for (${query}) with limit: ${limit}`);
 	const searchResult = await search(query, { limit: limit });
-	if (limit === 1) {
-		const infoData = await videoInfo(searchResult[0].url);
-		return infoData.video_details;
-	} else {
-		// TODO: handle query for more than one video
-	}
+	const infoData = await videoInfo(searchResult[0].url);
+	return infoData.video_details;
+	// TODO: handle query for more than one video
 }
 
 function isValidHttpUrl(string: string) {
@@ -338,5 +334,9 @@ export function checkMusicPermission(
 }
 
 export function getAudioPlayerStatus(guildId: Snowflake) {
-	return getServerQueue(guildId)?.audioPlayer?.state.status;
+	return getServerQueue(guildId)?.audioPlayer?.state.status || null;
+}
+
+export function getSongsList(guildId: Snowflake) {
+	getServerQueue(guildId);
 }
