@@ -66,46 +66,35 @@ export async function play(
 	if (!message) return;
 
 	let song: Song;
+	let serverQueue;
 	try {
-		song = await fetchSong(args);
-		if (!song.title || !song.url) {
-			console.log(song.title, song.url);
-			throw new Error("Error finding video.");
+		const songPromise = fetchSong(args);
+		serverQueue = getServerQueue(guildId);
+		if (serverQueue) {
+			song = await songPromise;
+			if (!song.title || !song.url) {
+				console.log(song.title, song.url);
+				throw new Error("Error finding video.");
+			}
+			serverQueue.songs.push(song);
+			await textChannel.send(`👍 **${song.title}** added to queue!`);
+			return;
 		}
-	} catch (error) {
-		console.error(error);
-		let eMsg;
-		if (error instanceof Error) eMsg = error.message;
-		else eMsg = String(error);
-		message.reply(eMsg);
-		return;
-	}
 
-	// if a server queue already exists then add song to existing queue
-	if (isThereQueue(guildId)) {
-		const serverQueue = getServerQueue(guildId)!;
-		serverQueue.songs.push(song);
-		await textChannel.send(`👍 **${song.title}** added to queue!`);
-		return;
-	}
+		serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
 
-	const serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
-	serverQueue.songs.push(song);
-
-	// Establish a connection and play the song with the videoPlayer function.
-	try {
 		const voiceConnection = createVoiceConnection(
 			voiceChannel.id,
 			voiceChannel.guild.id,
 			voiceChannel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
 		);
 
+		const audioPlayer = createAudioPlayer();
 		serverQueue.voiceConnection = voiceConnection;
-		const player = createAudioPlayer();
-		serverQueue.audioPlayer = player;
-		serverQueue.voiceConnection.subscribe(player);
+		serverQueue.audioPlayer = audioPlayer;
+		serverQueue.voiceConnection.subscribe(audioPlayer);
 
-		player.on("stateChange", (oldState, newState) => {
+		audioPlayer.on("stateChange", (oldState, newState) => {
 			console.log(
 				`Audio player transitioned from ${oldState.status} to ${newState.status}`
 			);
@@ -116,11 +105,21 @@ export async function play(
 				playNext(guildId);
 			}
 		});
-		playSong(guildId, serverQueue.songs[0]);
-	} catch (err) {
-		globalServersQueues.delete(guildId);
-		await message.channel.send("There was an error connecting!");
-		throw err;
+
+		song = await songPromise;
+		if (!song.title || !song.url) {
+			console.log(song.title, song.url);
+			throw new Error("Error finding video.");
+		}
+		serverQueue.songs.push(song);
+		playSong(guildId, song);
+	} catch (error) {
+		console.error(error);
+		let eMsg;
+		if (error instanceof Error) eMsg = error.message;
+		else eMsg = String(error);
+		await message.reply(eMsg);
+		return;
 	}
 }
 
