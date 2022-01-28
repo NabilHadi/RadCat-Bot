@@ -193,6 +193,7 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 }
 
 export function playNext(guildId: Snowflake) {
+	pausePlayer(guildId);
 	const serverQueue = getServerQueue(guildId);
 	serverQueue?.songs.shift();
 	playSong(guildId, serverQueue?.songs[0]);
@@ -357,6 +358,6 @@ export function getAudioPlayerStatus(guildId: Snowflake) {
 	return getServerQueue(guildId)?.audioPlayer?.state.status || null;
 }
 
-export function getSongsList(guildId: Snowflake) {
+export function getSongsArray(guildId: Snowflake) {
 	return getServerQueue(guildId)?.songs;
 }
