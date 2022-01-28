@@ -233,6 +233,7 @@ export function stopConnection(guildId: Snowflake) {
 	if (!serverQueue || !serverQueue.voiceConnection) return;
 	serverQueue.audioPlayer.stop();
 	serverQueue.voiceConnection.destroy();
+	serverQueue.songs.length = 0;
 	globalServersQueues.delete(guildId);
 	console.log(`voice connection stopped for guild id:${guildId}`);
 }
