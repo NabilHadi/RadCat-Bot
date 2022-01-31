@@ -207,12 +207,8 @@ export function getBotVoiceChannel(guildId: Snowflake) {
 }
 
 export function isPlaying(guildId: Snowflake) {
-	if (!isThereQueue(guildId)) return false;
+	if (!getServerQueue(guildId)) return false;
 	return getAudioPlayerStatus(guildId) === AudioPlayerStatus.Playing;
-}
-
-export function isThereQueue(guildId: string) {
-	return getServerQueue(guildId) !== null;
 }
 
 function getServerQueue(guildId: string) {
@@ -221,7 +217,7 @@ function getServerQueue(guildId: string) {
 
 export function stopConnection(guildId: Snowflake) {
 	const serverQueue = getServerQueue(guildId);
-	if (!serverQueue || !serverQueue.voiceConnection) return;
+	if (!serverQueue) return;
 	serverQueue.audioPlayer.stop();
 	serverQueue.voiceConnection.destroy();
 	serverQueue.songs.length = 0;
