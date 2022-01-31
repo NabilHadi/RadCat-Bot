@@ -94,17 +94,8 @@ export async function play(
 			return;
 		}
 
-		serverQueue = createServerQueue(
-			guildId,
-			voiceChannel,
-			textChannel,
-			createVoiceConnection(
-				voiceChannel.id,
-				voiceChannel.guild.id,
-				voiceChannel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
-			),
-			createAudioPlayer()
-		);
+		serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
+
 		serverQueue.voiceConnection.subscribe(serverQueue.audioPlayer);
 		serverQueue.audioPlayer.on("stateChange", (oldState, newState) => {
 			console.log(
@@ -138,30 +129,30 @@ async function fetchSong(
 ): Promise<Song> {
 	if (argumentType === ArgumentTypes.SEARCH) {
 		const queryString = args.join(" ");
-		const videoQuery = await queryVideo(queryString);
+		const video = await queryYTVideo(queryString);
 
-		if (!videoQuery.title || !videoQuery.url) {
-			console.log(videoQuery);
+		if (!video.title || !video.url) {
+			console.log(video);
 			throw new Error("Error Song has no title or has no url");
 		}
 
 		return {
-			title: videoQuery.title,
-			url: videoQuery.url,
-			length: videoQuery.durationRaw,
+			title: video.title,
+			url: video.url,
+			length: video.durationRaw,
 		};
 	} else if (argumentType === ArgumentTypes.VIDEO) {
-		const songInfo = await (await videoInfo(args[0])).video_details;
+		const video = (await videoInfo(args[0])).video_details;
 
-		if (!songInfo.title || !songInfo.url) {
-			console.log(songInfo);
+		if (!video.title || !video.url) {
+			console.log(video);
 			throw new Error("Error Song has no title or has no url");
 		}
 
 		return {
-			title: songInfo.title,
-			url: songInfo.url,
-			length: songInfo.durationRaw,
+			title: video.title,
+			url: video.url,
+			length: video.durationRaw,
 		};
 	} else throw new Error("Invalid argument type in fetchSong");
 }
@@ -242,17 +233,20 @@ function createServerQueue(
 	guildId: string,
 	voiceChannel: VoiceChannel,
 	textChannel: TextChannel,
-	voiceConnection: VoiceConnection,
-	audioPlayer: AudioPlayer,
 	songs: Song[] = []
 ) {
 	const serverQueue: ServerQueue = {
 		voiceChannel: voiceChannel,
 		textChannel: textChannel,
-		voiceConnection: voiceConnection,
-		audioPlayer: audioPlayer,
+		voiceConnection: createVoiceConnection(
+			voiceChannel.id,
+			voiceChannel.guild.id,
+			voiceChannel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
+		),
+		audioPlayer: createAudioPlayer(),
 		songs: songs,
 	};
+
 	globalServersQueues.set(guildId, serverQueue);
 	console.log(`created new Server Queue for guild id: ${guildId}`);
 	return serverQueue;
@@ -272,12 +266,11 @@ function createVoiceConnection(
 	});
 }
 
-async function queryVideo(query: string, limit = 1) {
-	console.log(`video search query for (${query}) with limit: ${limit}`);
-	const searchResult = await search(query, { limit: limit });
-	const infoData = await videoInfo(searchResult[0].url);
-	return infoData.video_details;
-	// TODO: handle query for more than one video
+// TODO: handle query for more than one video
+async function queryYTVideo(query: string) {
+	console.log(`Youtube video search query for (${query})`);
+	const searchResult = await search(query, { source: { youtube: "video" } });
+	return searchResult[0];
 }
 
 function isValidHttpUrl(string: string) {
