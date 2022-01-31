@@ -27,9 +27,9 @@ export default {
 		let songNames = "";
 		for (let i = 0; i < songs.length; i++) {
 			if (songNames.length > 3000) break;
-			songNames += `${i + 1} - [**${songs[i].title}**](${
-				songs[i].url
-			}) of length (${songs[i].length})\n`;
+			songNames += `${i + 1} - [**${songs[i].title}**](${songs[i].url}) (${
+				songs[i].length
+			})\n`;
 		}
 
 		const listEmbed = new MessageEmbed()
