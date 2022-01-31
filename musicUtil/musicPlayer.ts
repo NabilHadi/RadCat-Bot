@@ -269,7 +269,10 @@ function createVoiceConnection(
 // TODO: handle query for more than one video
 async function queryYTVideo(query: string) {
 	console.log(`Youtube video search query for (${query})`);
-	const searchResult = await search(query, { source: { youtube: "video" } });
+	const searchResult = await search(query, {
+		limit: 1,
+		source: { youtube: "video" },
+	});
 	return searchResult[0];
 }
 
