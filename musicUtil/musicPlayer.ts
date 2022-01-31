@@ -74,10 +74,48 @@ export async function play(
 		const argumentType = getArgumentType(args);
 		if (argumentType === ArgumentTypes.ELSE) {
 			throw new Error("Provided link/query is not supported yet");
-		} else if (argumentType === ArgumentTypes.PLAYLIST) {
-			throw new Error(
-				"The link provided is for a playlist, which is not supported currently!"
-			);
+		}
+
+		if (argumentType === ArgumentTypes.PLAYLIST) {
+			const playlist = await playlistInfo(args[0]);
+			const videos = await playlist.all_videos();
+
+			let serverQueue = getServerQueue(guildId);
+			if (!serverQueue) {
+				serverQueue = await initSongPlayer(guildId, voiceChannel, textChannel);
+				const firstVid = videos.shift();
+				if (!firstVid) {
+					console.log(firstVid);
+					throw new Error("Found empty Playlist");
+				}
+				if (!firstVid.title || !firstVid.url) {
+					console.log(firstVid);
+					throw new Error("Error Song has no title or has no url");
+				}
+				const song: Song = {
+					title: firstVid.title,
+					url: firstVid.url,
+					length: firstVid.durationRaw,
+				};
+				serverQueue.songs.push(song);
+				playSong(guildId, song);
+			}
+
+			let count = 0;
+			for (let video of videos) {
+				if (!video.title) continue;
+				const song: Song = {
+					title: video.title,
+					url: video.url,
+					length: video.durationRaw,
+				};
+				serverQueue.songs.push(song);
+				count++;
+			}
+
+			message.reply(`Added ${count} songs to the Queue!`);
+
+			return;
 		}
 
 		let serverQueue = getServerQueue(guildId);

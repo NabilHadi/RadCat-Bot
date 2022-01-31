@@ -26,6 +26,7 @@ export default {
 		// discord message formating
 		let songNames = "";
 		for (let i = 0; i < songs.length; i++) {
+			if (songNames.length > 3000) break;
 			songNames += `${i + 1} - [**${songs[i].title}**](${
 				songs[i].url
 			}) of length (${songs[i].length})\n`;
