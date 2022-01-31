@@ -10,6 +10,7 @@ import {
 	video_info as videoInfo,
 	search,
 	stream,
+	playlist_info as playlistInfo,
 } from "play-dl";
 import {
 	DiscordGatewayAdapterCreator,
@@ -69,49 +70,32 @@ export async function play(
 	textChannel: TextChannel,
 	voiceChannel: VoiceChannel
 ) {
-	if (!message) return;
-
 	try {
 		const argumentType = getArgumentType(args);
-		if (argumentType === ArgumentTypes.PLAYLIST) {
+		if (argumentType === ArgumentTypes.ELSE) {
+			throw new Error("Provided link/query is not supported yet");
+		} else if (argumentType === ArgumentTypes.PLAYLIST) {
 			throw new Error(
 				"The link provided is for a playlist, which is not supported currently!"
 			);
-		} else if (argumentType === ArgumentTypes.ELSE) {
-			throw new Error("Provided link/query is not supported yet");
 		}
 
-		const songPromise = fetchSong(args, argumentType);
-
-		let song: Song;
 		let serverQueue = getServerQueue(guildId);
-		if (serverQueue) {
-			song = await songPromise;
+		if (!serverQueue) {
+			serverQueue = await initSongPlayer(guildId, voiceChannel, textChannel);
+
+			const song = await fetchSong(args, argumentType);
 			serverQueue.songs.push(song);
-			await textChannel.send(
-				`👍 **${song.title}** (${song.length}) added to queue!`
-			);
+			playSong(guildId, song);
 			return;
 		}
 
-		serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
-
-		serverQueue.voiceConnection.subscribe(serverQueue.audioPlayer);
-		serverQueue.audioPlayer.on("stateChange", (oldState, newState) => {
-			console.log(
-				`Audio player transitioned from ${oldState.status} to ${newState.status}`
-			);
-			if (
-				oldState.status === AudioPlayerStatus.Playing &&
-				newState.status === AudioPlayerStatus.Idle
-			) {
-				playNext(guildId);
-			}
-		});
-
-		song = await songPromise;
+		const song = await fetchSong(args, argumentType);
 		serverQueue.songs.push(song);
-		playSong(guildId, song);
+		await textChannel.send(
+			`👍 **${song.title}** (${song.length}) added to queue!`
+		);
+		return;
 	} catch (error) {
 		stopConnection(guildId);
 		console.error(error);
@@ -121,6 +105,29 @@ export async function play(
 		await message.reply(eMsg);
 		return;
 	}
+}
+
+async function initSongPlayer(
+	guildId: Snowflake,
+	voiceChannel: VoiceChannel,
+	textChannel: TextChannel
+) {
+	const serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
+
+	serverQueue.voiceConnection.subscribe(serverQueue.audioPlayer);
+	serverQueue.audioPlayer.on("stateChange", (oldState, newState) => {
+		console.log(
+			`Audio player transitioned from ${oldState.status} to ${newState.status}`
+		);
+		if (
+			oldState.status === AudioPlayerStatus.Playing &&
+			newState.status === AudioPlayerStatus.Idle
+		) {
+			playNext(guildId);
+		}
+	});
+
+	return serverQueue;
 }
 
 async function fetchSong(
