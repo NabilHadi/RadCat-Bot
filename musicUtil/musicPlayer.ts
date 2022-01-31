@@ -58,10 +58,16 @@ enum ArgumentTypes {
 	ELSE = "else",
 }
 
+enum SuccessText {
+	NOW_PLAYING,
+	QUEUED_SONG,
+	QUEUED_PLAYLIST,
+}
+
 export const role = "dj";
 
-// Global queue. Every server will have a key and value pair in this map. { guild.id, queueConstructor{} }
-const globalServersQueues = new Map<string, ServerQueue>();
+// Global queue. Every server will have a key and value pair in this map. { guild.id, serverQueue{} }
+const globalServersQueues = new Map<Snowflake, ServerQueue>();
 
 export async function play(
 	message: Message,
@@ -73,76 +79,56 @@ export async function play(
 	try {
 		const argumentType = getArgumentType(args);
 		if (argumentType === ArgumentTypes.ELSE) {
-			throw new Error("Provided link/query is not supported yet");
-		}
-
-		if (argumentType === ArgumentTypes.PLAYLIST) {
-			const playlist = await playlistInfo(args[0]);
-			const videos = await playlist.all_videos();
-
-			let serverQueue = getServerQueue(guildId);
-			if (!serverQueue) {
-				serverQueue = await initSongPlayer(guildId, voiceChannel, textChannel);
-				const firstVid = videos.shift();
-				if (!firstVid) {
-					console.log(firstVid);
-					throw new Error("Found empty Playlist");
-				}
-				if (!firstVid.title || !firstVid.url) {
-					console.log(firstVid);
-					throw new Error("Error Song has no title or has no url");
-				}
-				const song: Song = {
-					title: firstVid.title,
-					url: firstVid.url,
-					length: firstVid.durationRaw,
-				};
-				serverQueue.songs.push(song);
-				playSong(guildId, song);
-			}
-
-			let count = 0;
-			for (let video of videos) {
-				if (!video.title) continue;
-				const song: Song = {
-					title: video.title,
-					url: video.url,
-					length: video.durationRaw,
-				};
-				serverQueue.songs.push(song);
-				count++;
-			}
-
-			message.reply(`Added ${count} songs to the Queue!`);
-
-			return;
+			throw new Error("Provided link/query is not supported");
 		}
 
 		let serverQueue = getServerQueue(guildId);
 		if (!serverQueue) {
 			serverQueue = await initSongPlayer(guildId, voiceChannel, textChannel);
-
+			if (argumentType === ArgumentTypes.PLAYLIST) {
+				await handlePlaylistPlaying(args, guildId, serverQueue, false);
+				return;
+			}
 			const song = await fetchSong(args, argumentType);
-			serverQueue.songs.push(song);
+			addSongToQueue(song, serverQueue);
 			playSong(guildId, song);
 			return;
 		}
 
+		if (argumentType === ArgumentTypes.PLAYLIST) {
+			await handlePlaylistPlaying(args, guildId, serverQueue, true);
+			return;
+		}
+
 		const song = await fetchSong(args, argumentType);
-		serverQueue.songs.push(song);
-		await textChannel.send(
-			`👍 **${song.title}** (${song.length}) added to queue!`
+		addSongToQueue(song, serverQueue);
+		sendSuccessMessage(
+			textChannel,
+			SuccessText.QUEUED_SONG,
+			song.title,
+			song.length
 		);
-		return;
 	} catch (error) {
-		stopConnection(guildId);
+		if (!isPlaying(guildId)) {
+			stopConnection(guildId);
+		}
 		console.error(error);
 		let eMsg;
 		if (error instanceof Error) eMsg = error.message;
 		else eMsg = String(error);
-		await message.reply(eMsg);
+		await message.reply("❌ Error: " + eMsg);
 		return;
 	}
+}
+
+function addSongToQueue(song: Song, serverQueue: ServerQueue) {
+	serverQueue.songs.push(song);
+	return true;
+}
+
+function addSongsToQueue(songs: Song[], serverQueue: ServerQueue) {
+	serverQueue.songs.push(...songs);
+	return true;
 }
 
 async function initSongPlayer(
@@ -178,7 +164,7 @@ async function fetchSong(
 
 		if (!video.title || !video.url) {
 			console.log(video);
-			throw new Error("Error Song has no title or has no url");
+			throw new Error("Song has no title or has no url");
 		}
 
 		return {
@@ -191,7 +177,7 @@ async function fetchSong(
 
 		if (!video.title || !video.url) {
 			console.log(video);
-			throw new Error("Error Song has no title or has no url");
+			throw new Error("Song has no title or has no url");
 		}
 
 		return {
@@ -200,6 +186,69 @@ async function fetchSong(
 			length: video.durationRaw,
 		};
 	} else throw new Error("Invalid argument type in fetchSong");
+}
+
+async function fetchPlaylistSongs(args: string[]) {
+	const playlist = await playlistInfo(args[0], { incomplete: true });
+	const videos = await playlist.all_videos();
+	const songs: Song[] = [];
+	for (let video of videos) {
+		if (!video.title) continue;
+		const song: Song = {
+			title: video.title,
+			url: video.url,
+			length: video.durationRaw,
+		};
+		songs.push(song);
+	}
+	return songs;
+}
+
+async function handlePlaylistPlaying(
+	args: string[],
+	guildId: Snowflake,
+	serverQueue: ServerQueue,
+	queue: boolean
+) {
+	const songs = await fetchPlaylistSongs(args);
+	const firstSong = songs.shift();
+	if (!firstSong) throw new Error("Empty playlist");
+	if (queue) {
+		addSongsToQueue(songs, serverQueue);
+		sendSuccessMessage(
+			serverQueue.textChannel,
+			SuccessText.QUEUED_PLAYLIST,
+			songs.length.toString()
+		);
+		return;
+	}
+	addSongsToQueue(songs, serverQueue);
+	sendSuccessMessage(
+		serverQueue.textChannel,
+		SuccessText.QUEUED_PLAYLIST,
+		songs.length.toString()
+	);
+	addSongToQueue(firstSong, serverQueue);
+	playSong(guildId, firstSong);
+}
+
+async function sendSuccessMessage(
+	textChannel: TextChannel,
+	messageType: SuccessText,
+	...args: string[]
+) {
+	switch (messageType) {
+		case SuccessText.NOW_PLAYING:
+			await textChannel.send(
+				`🎶 Now playing **${args[0]}** for **(${args[1]})**`
+			);
+			break;
+		case SuccessText.QUEUED_SONG:
+			await textChannel.send(`👍 **${args[0]}** (${args[1]}) added to queue!`);
+			break;
+		case SuccessText.QUEUED_PLAYLIST:
+			await textChannel.send(`👍 Added ${args[0]} songs to the Queue!`);
+	}
 }
 
 function getArgumentType(args: string[]): ArgumentTypes {
@@ -223,8 +272,11 @@ async function playSong(guildId: Snowflake, song: Song | undefined) {
 	});
 
 	serverQueue.audioPlayer.play(audioResource);
-	await serverQueue.textChannel.send(
-		`🎶 Now playing **${song.title}** for **(${song.length})**`
+	sendSuccessMessage(
+		serverQueue.textChannel,
+		SuccessText.NOW_PLAYING,
+		song.title,
+		song.length.toString()
 	);
 }
 
