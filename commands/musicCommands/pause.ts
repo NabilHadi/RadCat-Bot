@@ -4,7 +4,7 @@ import {
 	pausePlayer,
 	checkMusicPermission,
 	unpausePlayer,
-} from "./musicUtil/musicPlayer";
+} from "../../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "pause currently playing song", // Required for slash commands

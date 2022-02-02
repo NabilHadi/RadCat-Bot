@@ -4,7 +4,7 @@ import {
 	play,
 	checkMusicPermission,
 	getBotVoiceChannel,
-} from "./musicUtil/musicPlayer";
+} from "../../musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "play youtube videos", // Required for slash commands
