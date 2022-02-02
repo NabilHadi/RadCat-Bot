@@ -1,8 +1,8 @@
 import { ICommand } from "wokcommands";
-import { checkMusicPermission, stopConnection } from "../musicUtil/musicPlayer";
+import { playNext, checkMusicPermission } from "./musicUtil/musicPlayer";
 export default {
 	category: "Music",
-	description: "stop playing music and leave voice channel", // Required for slash commands
+	description: "skip currently playing song", // Required for slash commands
 
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
@@ -16,8 +16,7 @@ export default {
 			return;
 		}
 
-		stopConnection(guild.id);
-
+		playNext(guild.id);
 		// TODO: handle slash command interaction
 	},
 } as ICommand;

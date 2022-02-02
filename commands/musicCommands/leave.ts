@@ -1,18 +1,13 @@
 import { ICommand } from "wokcommands";
-import {
-	isPlaying,
-	pausePlayer,
-	checkMusicPermission,
-	unpausePlayer,
-} from "../musicUtil/musicPlayer";
+import { checkMusicPermission, stopConnection } from "./musicUtil/musicPlayer";
 export default {
 	category: "Music",
-	description: "pause currently playing song", // Required for slash commands
+	description: "stop playing music and leave voice channel", // Required for slash commands
 
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
-	callback: async ({ message, interaction, guild, member }) => {
+	callback: ({ message, interaction, guild, member }) => {
 		if (guild === null) return;
 
 		const permission = checkMusicPermission(member, true);
@@ -21,13 +16,7 @@ export default {
 			return;
 		}
 
-		if (isPlaying(guild.id) === false) {
-			message.reply("Nothing is playing right now!");
-			return;
-		}
-
-		pausePlayer(guild.id);
-		message.reply("Song has been paused");
+		stopConnection(guild.id);
 
 		// TODO: handle slash command interaction
 	},

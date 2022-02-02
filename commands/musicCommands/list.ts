@@ -1,6 +1,6 @@
 import { MessageEmbed } from "discord.js";
 import { ICommand } from "wokcommands";
-import { checkMusicPermission, getSongsArray } from "../musicUtil/musicPlayer";
+import { checkMusicPermission, getSongsArray } from "./musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "list songs in queue", // Required for slash commands
