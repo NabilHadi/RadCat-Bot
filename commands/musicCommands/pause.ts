@@ -3,7 +3,6 @@ import {
 	isPlaying,
 	pausePlayer,
 	checkMusicPermission,
-	unpausePlayer,
 } from "../../musicUtil/musicPlayer";
 export default {
 	category: "Music",
@@ -12,7 +11,7 @@ export default {
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
-	callback: async ({ message, interaction, guild, member }) => {
+	callback: async ({ message, guild, member }) => {
 		if (guild === null) return;
 
 		const permission = checkMusicPermission(member, true);

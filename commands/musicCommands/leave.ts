@@ -10,7 +10,7 @@ export default {
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
-	callback: ({ message, interaction, guild, member }) => {
+	callback: ({ message, guild, member }) => {
 		if (guild === null) return;
 
 		const permission = checkMusicPermission(member, true);

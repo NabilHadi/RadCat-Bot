@@ -12,7 +12,7 @@ export default {
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
-	callback: ({ message, interaction, args, channel, guild, member }) => {
+	callback: ({ message, args, channel, guild, member }) => {
 		if (guild === null) return;
 
 		const voiceChannel = member.voice.channel as VoiceChannel;
