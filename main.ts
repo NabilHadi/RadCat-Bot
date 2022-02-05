@@ -4,7 +4,7 @@ import path from "path";
 import dotenv from "dotenv";
 dotenv.config();
 
-const prefix = "rc?";
+const prefix = "?";
 
 const client = new DiscordJS.Client({
 	intents: [
