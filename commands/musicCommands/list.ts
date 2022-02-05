@@ -25,7 +25,6 @@ export default {
 			message.reply("No songs were found");
 			return;
 		}
-
 		// discord message formating
 		let songNames = "";
 		for (let i = 0; i < songs.length; i++) {

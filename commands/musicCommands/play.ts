@@ -14,6 +14,10 @@ export default {
 
 	callback: ({ message, args, channel, guild, member }) => {
 		if (guild === null) return;
+		if (args.length === 0) {
+			message.reply("You must provide a youtube link or a song name");
+			return;
+		}
 
 		const voiceChannel = member.voice.channel as VoiceChannel;
 		const botVoiceChannel = getBotVoiceChannel(guild.id);

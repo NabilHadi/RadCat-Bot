@@ -20,6 +20,7 @@ import {
 	createAudioPlayer,
 	AudioPlayerStatus,
 	AudioPlayer,
+	getVoiceConnection,
 } from "@discordjs/voice";
 
 interface Song {
@@ -211,24 +212,16 @@ async function handlePlaylistPlaying(
 	queue: boolean
 ) {
 	const songs = await fetchPlaylistSongs(args);
-	const firstSong = songs.shift();
+	const firstSong = songs[0];
 	if (!firstSong) throw new Error("Empty playlist");
-	if (queue) {
-		addSongsToQueue(songs, serverQueue);
-		sendSuccessMessage(
-			serverQueue.textChannel,
-			SuccessText.QUEUED_PLAYLIST,
-			songs.length.toString()
-		);
-		return;
-	}
 	addSongsToQueue(songs, serverQueue);
 	sendSuccessMessage(
 		serverQueue.textChannel,
 		SuccessText.QUEUED_PLAYLIST,
 		songs.length.toString()
 	);
-	addSongToQueue(firstSong, serverQueue);
+	if (queue) return;
+
 	playSong(guildId, firstSong);
 }
 
@@ -314,7 +307,10 @@ function getServerQueue(guildId: string) {
 
 export function stopConnection(guildId: Snowflake) {
 	const serverQueue = getServerQueue(guildId);
-	if (!serverQueue) return;
+	if (!serverQueue) {
+		getVoiceConnection(guildId)?.destroy();
+		return;
+	}
 	serverQueue.audioPlayer.stop();
 	serverQueue.voiceConnection.destroy();
 	serverQueue.songs.length = 0;
