@@ -20,6 +20,8 @@ client.on("ready", () => {
 	new WOKCommands(client, {
 		commandsDir: path.join(__dirname, "commands"),
 		typeScript: true,
+		ignoreBots: true,
+		botOwners: process.env.BOT_OWNER,
 		testServers: [`${guildId}`, "590228866606563333"],
 	}).setDefaultPrefix(prefix);
 });
