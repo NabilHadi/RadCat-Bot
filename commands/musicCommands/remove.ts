@@ -9,17 +9,14 @@ export default {
 	category: "Music",
 	description: "removes songs in queue", // Required for slash commands
 
+	guildOnly: true,
+	minArgs: 1,
+	expectedArgs: '<A Number or "all">',
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
 	callback: ({ message, guild, member, args }) => {
 		if (guild === null) return;
-		if (args.length === 0) {
-			message.reply(
-				'You must provide song number to remove, or "all" to remove all songs in queue'
-			);
-			return;
-		}
 
 		const permission = checkMusicPermission(member, true);
 		if (permission.hasPermission === false) {

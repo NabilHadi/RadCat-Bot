@@ -10,6 +10,7 @@ export default {
 	category: "Music",
 	description: "unpause music player", // Required for slash commands
 
+	guildOnly: true,
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 

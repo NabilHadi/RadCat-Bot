@@ -9,15 +9,14 @@ export default {
 	category: "Music",
 	description: "play youtube videos", // Required for slash commands
 
+	guildOnly: true,
+	minArgs: 1,
+	expectedArgs: "<song name or youtube link> ",
 	slash: false, // Create both a slash and legacy command
 	testOnly: false, // Only register a slash command for the testing guilds
 
 	callback: ({ message, args, channel, guild, member }) => {
 		if (guild === null) return;
-		if (args.length === 0) {
-			message.reply("You must provide a youtube link or a song name");
-			return;
-		}
 
 		const voiceChannel = member.voice.channel as VoiceChannel;
 		const botVoiceChannel = getBotVoiceChannel(guild.id);

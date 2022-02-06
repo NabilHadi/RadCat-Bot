@@ -7,6 +7,8 @@ export default {
 	category: "Random",
 	description: "Searches wikipedia for a given word",
 
+	minArgs: 1,
+	expectedArgs: "<Word>",
 	slash: false,
 	testOnly: false,
 
