@@ -5,12 +5,16 @@ import { Parser } from "htmlparser2";
 
 export default {
 	category: "Random",
-	description: "Replies with a random Pun",
+	description: "Searches wikipedia for a given word",
 
 	slash: false,
 	testOnly: false,
 
 	callback: async ({ message, args }) => {
+		if (args.length === 0) {
+			message.reply("Please Provide a word to search");
+			return;
+		}
 		try {
 			const requestConfig: AxiosRequestConfig = {
 				headers: {
