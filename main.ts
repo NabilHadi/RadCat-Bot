@@ -12,6 +12,7 @@ const client = new DiscordJS.Client({
 		Intents.FLAGS.GUILD_MESSAGES,
 		Intents.FLAGS.GUILD_MEMBERS,
 		Intents.FLAGS.GUILD_VOICE_STATES,
+		Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
 	],
 });
 
@@ -23,7 +24,28 @@ client.on("ready", () => {
 		ignoreBots: true,
 		botOwners: process.env.BOT_OWNER,
 		testServers: [`${guildId}`, "590228866606563333"],
-	}).setDefaultPrefix(prefix);
+	})
+		.setDefaultPrefix(prefix)
+		.setCategorySettings([
+			{
+				name: "Random",
+				emoji: "🎮",
+			},
+			{
+				name: "Music",
+				emoji: "🎵",
+			},
+			{
+				name: "Configuration",
+				emoji: "🚧",
+				hidden: true,
+			},
+			{
+				name: "Testing",
+				emoji: "🧪",
+				hidden: true,
+			},
+		]);
 });
 
 client.login(process.env.TOKEN);
