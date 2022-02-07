@@ -2,7 +2,7 @@
 	"name": "discordbot",
 	"version": "1.0.0",
 	"description": "",
-	"main": "main.js",
+	"main": "main.ts",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"tsc": "tsc -w --skipLibCheck",
@@ -20,6 +20,7 @@
 		"ffmpeg-static": "^4.4.1",
 		"htmlparser2": "^7.2.0",
 		"libsodium-wrappers": "^0.7.9",
+		"mongoose": "^6.2.0",
 		"play-dl": "^1.7.8",
 		"wokcommands": "^1.5.3"
 	},
