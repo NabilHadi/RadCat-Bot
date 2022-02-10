@@ -2,7 +2,7 @@ import { ICommand } from "wokcommands";
 import {
 	checkMusicPermission,
 	stopConnection,
-} from "../../musicUtil/musicPlayer";
+} from "../../utils/musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "stop playing music and leave voice channel", // Required for slash commands

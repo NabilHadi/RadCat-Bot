@@ -4,7 +4,7 @@ import {
 	checkMusicPermission,
 	getSongsArray,
 	playNext,
-} from "../../musicUtil/musicPlayer";
+} from "../../utils/musicUtil/musicPlayer";
 export default {
 	category: "Music",
 	description: "removes songs in queue", // Required for slash commands
