@@ -2,29 +2,19 @@ import { ICommand } from "wokcommands";
 import axios, { AxiosRequestConfig } from "axios";
 import { MessageEmbed } from "discord.js";
 import { Parser } from "htmlparser2";
+import ApiRequest from "../../utils/apiUtils/apiRequest";
 
 export default {
 	category: "Random",
 	description: "Searches wikipedia for a given word",
 
 	minArgs: 1,
-	expectedArgs: "<Word>",
+	expectedArgs: "<term>",
 	slash: false,
 	testOnly: false,
 
 	callback: async ({ message, args }) => {
-		if (args.length === 0) {
-			message.reply("Please Provide a word to search");
-			return;
-		}
 		try {
-			const requestConfig: AxiosRequestConfig = {
-				headers: {
-					Accept: "application/json",
-					"User-Agent":
-						"My Discord Bot (https://github.com/NabilHadi/RadCat-Bot)",
-				},
-			};
 			const queryParams = {
 				action: "query",
 				list: "search",
@@ -32,11 +22,9 @@ export default {
 				utf8: "",
 				format: "json",
 			};
-			const queryString = new URLSearchParams(queryParams).toString();
-			const res = await axios.get(
-				`https://en.wikipedia.org/w/api.php?${queryString}`,
-				requestConfig
-			);
+			const res = await ApiRequest.get("https://en.wikipedia.org/w/api.php", {
+				queryParams,
+			});
 			const queryResults = res.data.query.search;
 			if (queryResults.length < 1) {
 				message.reply(

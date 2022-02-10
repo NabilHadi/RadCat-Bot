@@ -1,5 +1,5 @@
 import { ICommand } from "wokcommands";
-import axios, { AxiosRequestConfig } from "axios";
+import ApiRequest from "../../utils/apiUtils/apiRequest";
 
 export default {
 	category: "Random",
@@ -10,14 +10,8 @@ export default {
 
 	callback: async ({ message }) => {
 		try {
-			const requestConfig: AxiosRequestConfig = {
-				headers: {
-					Accept: "application/json",
-					"User-Agent":
-						"My Discord Bot (https://github.com/NabilHadi/RadCat-Bot)",
-				},
-			};
-			const res = await axios.get("https://icanhazdadjoke.com/", requestConfig);
+			const res = await ApiRequest.get("https://icanhazdadjoke.com/");
+
 			const joke = res.data.joke;
 			message.reply(joke);
 		} catch (error) {
