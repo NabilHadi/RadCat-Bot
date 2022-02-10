@@ -5,7 +5,7 @@ import {
 	checkMusicPermission,
 	unpausePlayer,
 	getAudioPlayerStatus,
-} from "../../utils/musicUtil/musicPlayer";
+} from "../../utils/musicUtils/musicPlayer";
 export default {
 	category: "Music",
 	description: "unpause music player", // Required for slash commands

@@ -3,7 +3,7 @@ import { ICommand } from "wokcommands";
 import {
 	checkMusicPermission,
 	getSongsArray,
-} from "../../utils/musicUtil/musicPlayer";
+} from "../../utils/musicUtils/musicPlayer";
 export default {
 	category: "Music",
 	description: "list songs in queue", // Required for slash commands

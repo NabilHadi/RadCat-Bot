@@ -2,7 +2,7 @@ import { ICommand } from "wokcommands";
 import {
 	playNext,
 	checkMusicPermission,
-} from "../../utils/musicUtil/musicPlayer";
+} from "../../utils/musicUtils/musicPlayer";
 export default {
 	category: "Music",
 	description: "skip currently playing song", // Required for slash commands
