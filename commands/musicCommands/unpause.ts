@@ -1,11 +1,11 @@
 import { AudioPlayerStatus } from "@discordjs/voice";
 import { ICommand } from "wokcommands";
 import {
-	isPlaying,
 	checkMusicPermission,
-	unpausePlayer,
 	getAudioPlayerStatus,
 } from "../../utils/musicUtils/musicPlayer";
+import { unpausePlayer } from "../../utils/musicUtils/musicPlayer";
+
 export default {
 	category: "Music",
 	description: "unpause music player", // Required for slash commands
@@ -19,24 +19,26 @@ export default {
 
 		const permission = checkMusicPermission(member, true);
 
-		console.log(permission);
 		if (permission.hasPermission === false) {
 			message.reply(permission.denyReason.description);
 			return;
 		}
 
-		if (isPlaying(guild.id) === true) {
-			message.reply("Music is already playing!");
-			return;
-		}
+		// if (isPlaying(guild.id) === true) {
+		// 	message.reply("Music is already playing!");
+		// 	return;
+		// }
 
-		if (getAudioPlayerStatus(guild.id) !== AudioPlayerStatus.Paused) {
-			message.reply("Nothing there to unpause!");
-			return;
-		}
+		// if (getAudioPlayerStatus(guild.id) !== AudioPlayerStatus.Paused) {
+		// 	message.reply("Nothing there to unpause!");
+		// 	return;
+		// }
 
-		unpausePlayer(guild.id);
-		message.reply("Unpausing...");
+		if (unpausePlayer(guild.id)) {
+			message.reply("unPaused");
+		} else {
+			message.reply("Did not unpause");
+		}
 
 		// TODO: handle slash command interaction
 	},

@@ -1,8 +1,5 @@
 import { ICommand } from "wokcommands";
-import {
-	playNext,
-	checkMusicPermission,
-} from "../../utils/musicUtils/musicPlayer";
+import { skipTrack } from "../../utils/musicUtils/musicPlayer";
 export default {
 	category: "Music",
 	description: "skip currently playing song", // Required for slash commands
@@ -20,7 +17,7 @@ export default {
 			return;
 		}
 
-		playNext(guild.id);
+		skipTrack(guild.id);
 		// TODO: handle slash command interaction
 	},
 } as ICommand;

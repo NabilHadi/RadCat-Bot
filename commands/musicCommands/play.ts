@@ -2,9 +2,10 @@ import { VoiceChannel } from "discord.js";
 import { ICommand } from "wokcommands";
 import {
 	play,
-	checkMusicPermission,
 	getBotVoiceChannel,
+	checkMusicPermission,
 } from "../../utils/musicUtils/musicPlayer";
+
 export default {
 	category: "Music",
 	description: "play youtube videos", // Required for slash commands

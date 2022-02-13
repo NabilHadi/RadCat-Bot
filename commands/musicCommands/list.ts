@@ -1,9 +1,10 @@
 import { MessageEmbed } from "discord.js";
 import { ICommand } from "wokcommands";
 import {
+	getTracks,
 	checkMusicPermission,
-	getSongsArray,
 } from "../../utils/musicUtils/musicPlayer";
+
 export default {
 	category: "Music",
 	description: "list songs in queue", // Required for slash commands
@@ -21,23 +22,23 @@ export default {
 			return;
 		}
 
-		const songs = getSongsArray(guild.id);
-		if (!songs) {
+		const tracks = getTracks(guild.id);
+		if (!tracks) {
 			message.reply("No songs were found");
 			return;
 		}
 		// discord message formating
-		let songNames = "";
-		for (let i = 0; i < songs.length; i++) {
-			if (songNames.length > 3000) break;
-			songNames += `${i + 1} - [**${songs[i].title}**](${songs[i].url}) (${
-				songs[i].length
-			})\n`;
+		let tracksEmbdList = "";
+		for (let i = 0; i < tracks.length; i++) {
+			if (tracksEmbdList.length > 3000) break;
+			tracksEmbdList += `${i + 1} - [**${tracks[i].title}**](${
+				tracks[i].url
+			}) (${tracks[i].duration})\n`;
 		}
 
 		const listEmbed = new MessageEmbed()
 			.setTitle("List of songs")
-			.setDescription(songNames);
+			.setDescription(tracksEmbdList);
 
 		message.reply({ embeds: [listEmbed] });
 

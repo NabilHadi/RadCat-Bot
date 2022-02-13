@@ -1,3 +1,4 @@
+import { Player, Queue } from "discord-player";
 import {
 	GuildMember,
 	Message,
@@ -5,36 +6,11 @@ import {
 	TextChannel,
 	VoiceChannel,
 } from "discord.js";
-import {
-	yt_validate as ytValidate,
-	video_info as videoInfo,
-	search,
-	stream,
-	playlist_info as playlistInfo,
-} from "play-dl";
-import {
-	DiscordGatewayAdapterCreator,
-	joinVoiceChannel,
-	VoiceConnection,
-	createAudioResource,
-	createAudioPlayer,
-	AudioPlayerStatus,
-	AudioPlayer,
-	getVoiceConnection,
-} from "@discordjs/voice";
+import client from "../../main";
 
-interface Song {
-	title: string;
-	url: string;
-	length: string;
-}
-
-interface ServerQueue {
-	voiceChannel: VoiceChannel;
+interface QueueMetadata {
 	textChannel: TextChannel;
-	voiceConnection: VoiceConnection;
-	audioPlayer: AudioPlayer;
-	songs: Song[];
+	voiceChannel: VoiceChannel;
 }
 
 interface MusicPermission {
@@ -52,332 +28,152 @@ export enum MusicPermissionDenyReason {
 	NONE = "none",
 }
 
-enum ArgumentTypes {
-	VIDEO = "video",
-	PLAYLIST = "playlist",
-	SEARCH = "search",
-	ELSE = "else",
-}
+const player = new Player(client);
+const role = "dj";
 
-enum SuccessText {
-	NOW_PLAYING,
-	QUEUED_SONG,
-	QUEUED_PLAYLIST,
-}
+player.on("trackStart", (queue, track) => {
+	(<QueueMetadata>queue.metadata).textChannel.send(
+		`🎶 | Started playing: **${track.title}** in **${queue.connection.channel.name}**!`
+	);
+});
 
-export const role = "dj";
+player.on("trackAdd", (queue, track) => {
+	(<QueueMetadata>queue.metadata).textChannel.send(
+		`🎶 | Track **${track.title}** queued!`
+	);
+});
 
-// Global queue. Every server will have a key and value pair in this map. { guild.id, serverQueue{} }
-const globalServersQueues = new Map<Snowflake, ServerQueue>();
+player.on("botDisconnect", (queue) => {
+	(<QueueMetadata>queue.metadata).textChannel.send(
+		"❌ | I was manually disconnected from the voice channel, clearing queue!"
+	);
+});
 
-export async function play(
+player.on("channelEmpty", (queue) => {
+	(<QueueMetadata>queue.metadata).textChannel.send(
+		"❌ | Nobody is in the voice channel, leaving..."
+	);
+});
+
+player.on("queueEnd", (queue) => {
+	(<QueueMetadata>queue.metadata).textChannel.send("✅ | Queue finished!");
+});
+
+player.on("error", (queue, error) => {
+	console.log(
+		`[${queue.guild.name}] Error emitted from the queue: ${error.message}`
+	);
+});
+
+player.on("connectionError", (queue, error) => {
+	console.log(
+		`[${queue.guild.name}] Error emitted from the connection: ${error.message}`
+	);
+});
+
+async function play(
 	message: Message,
 	args: string[],
 	guildId: Snowflake,
 	textChannel: TextChannel,
 	voiceChannel: VoiceChannel
 ) {
+	// create or get guild's queue
+	const queue = player.createQueue(guildId, {
+		metadata: { textChannel, voiceChannel },
+		leaveOnEmpty: true,
+		leaveOnEmptyCooldown: 500,
+		leaveOnEnd: true,
+		leaveOnStop: true,
+	});
+
+	// connect to voice channel
 	try {
-		const argumentType = getArgumentType(args);
-		if (argumentType === ArgumentTypes.ELSE) {
-			throw new Error("Provided link/query is not supported");
-		}
-
-		let serverQueue = getServerQueue(guildId);
-		if (!serverQueue) {
-			serverQueue = await initSongPlayer(guildId, voiceChannel, textChannel);
-			if (argumentType === ArgumentTypes.PLAYLIST) {
-				await handlePlaylistPlaying(args, guildId, serverQueue, false);
-				return;
-			}
-			const song = await fetchSong(args, argumentType);
-			addSongToQueue(song, serverQueue);
-			playSong(guildId, song);
-			return;
-		}
-
-		if (argumentType === ArgumentTypes.PLAYLIST) {
-			await handlePlaylistPlaying(args, guildId, serverQueue, true);
-			return;
-		}
-
-		const song = await fetchSong(args, argumentType);
-		addSongToQueue(song, serverQueue);
-		sendSuccessMessage(
-			textChannel,
-			SuccessText.QUEUED_SONG,
-			song.title,
-			song.length
-		);
+		if (!queue.connection) await queue.connect(voiceChannel);
 	} catch (error) {
-		if (!isPlaying(guildId)) {
-			stopConnection(guildId);
-		}
-		console.error(error);
-		let eMsg;
-		if (error instanceof Error) eMsg = error.message;
-		else eMsg = String(error);
-		await message.reply("❌ Error: " + eMsg);
-		return;
+		queue.destroy();
+		return await message.reply("Could not join your voice channel!");
 	}
-}
 
-function addSongToQueue(song: Song, serverQueue: ServerQueue) {
-	serverQueue.songs.push(song);
-	return true;
-}
-
-function addSongsToQueue(songs: Song[], serverQueue: ServerQueue) {
-	serverQueue.songs.push(...songs);
-	return true;
-}
-
-async function initSongPlayer(
-	guildId: Snowflake,
-	voiceChannel: VoiceChannel,
-	textChannel: TextChannel
-) {
-	const serverQueue = createServerQueue(guildId, voiceChannel, textChannel);
-
-	serverQueue.voiceConnection.subscribe(serverQueue.audioPlayer);
-	serverQueue.audioPlayer.on("stateChange", (oldState, newState) => {
-		console.log(
-			`Audio player transitioned from ${oldState.status} to ${newState.status}`
-		);
-		if (
-			oldState.status === AudioPlayerStatus.Playing &&
-			newState.status === AudioPlayerStatus.Idle
-		) {
-			playNext(guildId);
-		}
+	// search for track/playlist
+	const query = args.join(" ");
+	const searchResult = await player.search(query, {
+		requestedBy: message.author,
 	});
 
-	return serverQueue;
-}
-
-async function fetchSong(
-	args: string[],
-	argumentType: ArgumentTypes.SEARCH | ArgumentTypes.VIDEO
-): Promise<Song> {
-	if (argumentType === ArgumentTypes.SEARCH) {
-		const queryString = args.join(" ");
-		const video = await queryYTVideo(queryString);
-
-		if (!video.title || !video.url) {
-			console.log(video);
-			throw new Error("Song has no title or has no url");
-		}
-
-		return {
-			title: video.title,
-			url: video.url,
-			length: video.durationRaw,
-		};
-	} else if (argumentType === ArgumentTypes.VIDEO) {
-		const video = (await videoInfo(args[0])).video_details;
-
-		if (!video.title || !video.url) {
-			console.log(video);
-			throw new Error("Song has no title or has no url");
-		}
-
-		return {
-			title: video.title,
-			url: video.url,
-			length: video.durationRaw,
-		};
-	} else throw new Error("Invalid argument type in fetchSong");
-}
-
-async function fetchPlaylistSongs(args: string[]) {
-	const playlist = await playlistInfo(args[0], { incomplete: true });
-	const videos = await playlist.all_videos();
-	const songs: Song[] = [];
-	for (let video of videos) {
-		if (!video.title) continue;
-		const song: Song = {
-			title: video.title,
-			url: video.url,
-			length: video.durationRaw,
-		};
-		songs.push(song);
-	}
-	return songs;
-}
-
-async function handlePlaylistPlaying(
-	args: string[],
-	guildId: Snowflake,
-	serverQueue: ServerQueue,
-	queue: boolean
-) {
-	const songs = await fetchPlaylistSongs(args);
-	const firstSong = songs[0];
-	if (!firstSong) throw new Error("Empty playlist");
-	addSongsToQueue(songs, serverQueue);
-	sendSuccessMessage(
-		serverQueue.textChannel,
-		SuccessText.QUEUED_PLAYLIST,
-		songs.length.toString()
-	);
-	if (queue) return;
-
-	playSong(guildId, firstSong);
-}
-
-async function sendSuccessMessage(
-	textChannel: TextChannel,
-	messageType: SuccessText,
-	...args: string[]
-) {
-	switch (messageType) {
-		case SuccessText.NOW_PLAYING:
-			await textChannel.send(
-				`🎶 Now playing **${args[0]}** for **(${args[1]})**`
-			);
-			break;
-		case SuccessText.QUEUED_SONG:
-			await textChannel.send(`👍 **${args[0]}** (${args[1]}) added to queue!`);
-			break;
-		case SuccessText.QUEUED_PLAYLIST:
-			await textChannel.send(`👍 Added ${args[0]} songs to the Queue!`);
-	}
-}
-
-function getArgumentType(args: string[]): ArgumentTypes {
-	if (!isValidHttpUrl(args[0])) return ArgumentTypes.SEARCH;
-	const linkType = ytValidate(args[0]);
-	if (linkType === "video") return ArgumentTypes.VIDEO;
-	else if (linkType === "playlist") return ArgumentTypes.PLAYLIST;
-	else return ArgumentTypes.ELSE;
-}
-
-async function playSong(guildId: Snowflake, song: Song | undefined) {
-	const serverQueue = getServerQueue(guildId);
-	if (!song || !serverQueue) {
-		stopConnection(guildId);
+	// If no playlist found play a track
+	if (!searchResult.playlist) {
+		const track = searchResult.tracks[0];
+		if (!track)
+			return await message.reply(`❌ | Track **${query}** not found!`);
+		await queue.play(track);
 		return;
 	}
 
-	const source = await stream(song.url);
-	const audioResource = createAudioResource(source.stream, {
-		inputType: source.type,
-	});
-
-	serverQueue.audioPlayer.play(audioResource);
-	sendSuccessMessage(
-		serverQueue.textChannel,
-		SuccessText.NOW_PLAYING,
-		song.title,
-		song.length.toString()
+	// play first track in playlist and add the rest of tracks to the queue
+	queue.play(searchResult.playlist.tracks.shift());
+	queue.addTracks(searchResult.playlist.tracks);
+	await message.reply(
+		`👍 | Queuing ${searchResult.playlist.tracks.length} tracks!`
 	);
 }
 
-export function playNext(guildId: Snowflake) {
-	pausePlayer(guildId);
-	const serverQueue = getServerQueue(guildId);
-	serverQueue?.songs.shift();
-	playSong(guildId, serverQueue?.songs[0]);
+function stopPlayer(guildId: Snowflake) {
+	player.getQueue(guildId).stop();
 }
-
-export function pausePlayer(guildId: Snowflake) {
-	const serverQueue = getServerQueue(guildId);
-	if (!serverQueue) return;
-	serverQueue.audioPlayer.pause();
-}
-
-export function unpausePlayer(guildId: Snowflake) {
-	const serverQueue = getServerQueue(guildId);
-	if (!serverQueue) return;
-	serverQueue.audioPlayer.unpause();
-}
-
-export function getBotVoiceChannel(guildId: Snowflake) {
-	return getServerQueue(guildId)?.voiceChannel || null;
-}
-
-export function isPlaying(guildId: Snowflake) {
-	if (!getServerQueue(guildId)) return false;
-	return getAudioPlayerStatus(guildId) === AudioPlayerStatus.Playing;
-}
-
-function getServerQueue(guildId: string) {
-	return globalServersQueues.get(guildId) || null;
-}
-
-export function stopConnection(guildId: Snowflake) {
-	const serverQueue = getServerQueue(guildId);
-	if (!serverQueue) {
-		getVoiceConnection(guildId)?.destroy();
-		return;
-	}
-	serverQueue.audioPlayer.stop();
-	serverQueue.voiceConnection.destroy();
-	serverQueue.songs.length = 0;
-	globalServersQueues.delete(guildId);
-	console.log(`voice connection stopped for guild id:${guildId}`);
-}
-
-function createServerQueue(
-	guildId: string,
-	voiceChannel: VoiceChannel,
-	textChannel: TextChannel,
-	songs: Song[] = []
-) {
-	const serverQueue: ServerQueue = {
-		voiceChannel: voiceChannel,
-		textChannel: textChannel,
-		voiceConnection: createVoiceConnection(
-			voiceChannel.id,
-			voiceChannel.guild.id,
-			voiceChannel.guild.voiceAdapterCreator as DiscordGatewayAdapterCreator
-		),
-		audioPlayer: createAudioPlayer(),
-		songs: songs,
-	};
-
-	globalServersQueues.set(guildId, serverQueue);
-	console.log(`created new Server Queue for guild id: ${guildId}`);
-	return serverQueue;
-}
-
-function createVoiceConnection(
-	voiceChannelId: Snowflake,
-	guildId: Snowflake,
-	voiceAdapterCreator: DiscordGatewayAdapterCreator
-) {
-	return joinVoiceChannel({
-		channelId: voiceChannelId,
-		guildId: guildId,
-		adapterCreator: voiceAdapterCreator,
-		selfDeaf: true,
-		selfMute: false,
-	});
-}
-
-// TODO: handle query for more than one video
-async function queryYTVideo(query: string) {
-	console.log(`Youtube video search query for (${query})`);
-	const searchResult = await search(query, {
-		limit: 1,
-		source: { youtube: "video" },
-	});
-	return searchResult[0];
-}
-
-function isValidHttpUrl(string: string) {
-	let url;
-
-	try {
-		url = new URL(string);
-	} catch (_) {
+// returns true if player is paused otherwise returns false
+function pausePlayer(guildId: Snowflake) {
+	const queue = player.getQueue(guildId);
+	if (queue.setPaused(true)) {
+		queue.playing = false;
+		return true;
+	} else {
 		return false;
 	}
-
-	return url.protocol === "http:" || url.protocol === "https:";
 }
 
-export function checkMusicPermission(
+// returns true if player is unpaused otherewise returns false
+function unpausePlayer(guildId: Snowflake) {
+	// If you try to unpause player when it is already unpaused it will stop playing compeletly
+	// so I added a check to see if player if paused before trying to unpause
+	const queue = player.getQueue(guildId);
+	if (queue.playing) {
+		// already playing no need to unpause
+		return false;
+	} else {
+		queue.setPaused(false);
+		queue.playing = true;
+		return true;
+	}
+}
+
+function skipTrack(guildId: Snowflake) {
+	return player.getQueue(guildId).skip();
+}
+
+function skipTo(guildId: Snowflake, trackNumber: number) {
+	player.getQueue(guildId).skipTo(trackNumber);
+}
+
+function clearQueue(guildId: Snowflake) {
+	player.getQueue(guildId).clear();
+}
+
+function getTracks(guildId: Snowflake) {
+	return player.getQueue(guildId).tracks;
+}
+
+function getBotVoiceChannel(guildId: Snowflake) {
+	const queue = player.getQueue(guildId);
+	return queue ? (<QueueMetadata>queue.metadata).voiceChannel : null;
+}
+
+// TODO: test this
+function isPlaying(guildId: Snowflake) {
+	return player.getQueue(guildId).playing || false;
+}
+
+function checkMusicPermission(
 	member: GuildMember,
 	shouldBeInSameVoiceChannel: boolean
 ): MusicPermission {
@@ -440,10 +236,16 @@ export function checkMusicPermission(
 	}
 }
 
-export function getAudioPlayerStatus(guildId: Snowflake) {
-	return getServerQueue(guildId)?.audioPlayer?.state.status || null;
-}
-
-export function getSongsArray(guildId: Snowflake) {
-	return getServerQueue(guildId)?.songs;
-}
+export {
+	play,
+	stopPlayer,
+	pausePlayer,
+	unpausePlayer,
+	skipTrack,
+	skipTo,
+	clearQueue,
+	getTracks,
+	getBotVoiceChannel,
+	isPlaying,
+	checkMusicPermission,
+};
