@@ -24,7 +24,7 @@ client.on("ready", () => {
 		ignoreBots: true,
 		botOwners: process.env.BOT_OWNER,
 		testServers: [`${guildId}`, "590228866606563333"],
-		mongoUri: process.env.MONGO_URI,
+		//mongoUri: process.env.MONGO_URI,
 	})
 		.setDefaultPrefix(prefix)
 		.setCategorySettings([

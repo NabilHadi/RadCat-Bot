@@ -3,6 +3,7 @@ import { ICommand } from "wokcommands";
 import {
 	getTracks,
 	checkMusicPermission,
+	getPlayingTrack,
 } from "../../utils/musicUtils/musicPlayer";
 
 export default {
@@ -27,11 +28,13 @@ export default {
 			message.reply("No songs were found");
 			return;
 		}
+
+		const currTrack = getPlayingTrack(guild.id);
 		// discord message formating
-		let tracksEmbdList = "";
+		let tracksEmbdList = `1 - [**${currTrack.title}**](${currTrack.url}) (${currTrack.duration})\n`;
 		for (let i = 0; i < tracks.length; i++) {
 			if (tracksEmbdList.length > 3000) break;
-			tracksEmbdList += `${i + 1} - [**${tracks[i].title}**](${
+			tracksEmbdList += `${i + 2} - [**${tracks[i].title}**](${
 				tracks[i].url
 			}) (${tracks[i].duration})\n`;
 		}
