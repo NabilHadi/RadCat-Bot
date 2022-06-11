@@ -1,6 +1,7 @@
-import { Client, ExcludeEnum } from "discord.js";
+import { Client, ExcludeEnum, PresenceStatusData } from "discord.js";
 import { ActivityTypes } from "discord.js/typings/enums";
 import { ICommand } from "wokcommands";
+import commandUtils from "../../utils/commandUtils";
 
 const getActivtyType = (text: String) => {
   switch (text) {
@@ -17,19 +18,35 @@ const getActivtyType = (text: String) => {
   }
 };
 
-const setStatus = (
-  client: Client,
-  activityType: ExcludeEnum<typeof ActivityTypes, "CUSTOM">,
-  status: string
-) => {
-  client.user?.setPresence({
-    status: "online",
-    afk: true,
+const getStatusType = (text: String) => {
+  switch (text) {
+    case "idle":
+      return "idle";
+    case "dnd":
+      return "dnd";
+    case "invisible":
+      return "invisible";
+    default:
+      return "online";
+  }
+};
 
+type StatusOptions = {
+  type?: ExcludeEnum<typeof ActivityTypes, "CUSTOM">;
+  name?: string;
+  status?: PresenceStatusData;
+  url?: string;
+};
+
+const setStatus = (client: Client, options: StatusOptions) => {
+  client.user?.setPresence({
+    status: options.status,
+    afk: true,
     activities: [
       {
-        name: status,
-        type: activityType,
+        name: options.name,
+        type: options.type,
+        url: options.url,
       },
     ],
   });
@@ -40,22 +57,28 @@ export default {
   description: "Updates the status for the bot",
 
   minArgs: 2,
-  expectedArgs: "<activity Type> <status>",
+  expectedArgs: "<activity?> <name?> <url?>",
 
   ownerOnly: true,
   hidden: true,
 
-  // This method is invoked only once whenever the command is registered
   init: (client: Client) => {
-    const status = "Youtube";
-    setStatus(client, "WATCHING", status);
+    setStatus(client, {
+      status: "online",
+      type: ActivityTypes.WATCHING,
+      name: "TV",
+    });
   },
 
-  callback: ({ client, args, message }) => {
-    setStatus(client, getActivtyType(args[0]), args[1]);
-
-    message.reply({
-      content: "Status set!",
+  callback: ({ client, text, message }) => {
+    const options = commandUtils.getArgs(text);
+    setStatus(client, {
+      type: getActivtyType(options.activity),
+      name: options.name,
+      status: getStatusType(options.status),
+      url: options.url,
     });
+
+    message.react("✅");
   },
 } as ICommand;
