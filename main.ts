@@ -5,7 +5,6 @@ import {
   Client,
   Collection,
   GatewayIntentBits,
-  GuildTextBasedChannel,
   SlashCommandBuilder,
 } from "discord.js";
 import DisTube, { Queue } from "distube";
@@ -27,7 +26,7 @@ const commands = new Collection<
   { data: SlashCommandBuilder; execute: Function }
 >();
 
-const commandsPath = path.join(__dirname, "commands/musicCommands/");
+const commandsPath = path.join(__dirname, "commands/");
 const commandFiles = fs
   .readdirSync(commandsPath)
   .filter((file) => file.endsWith(".ts"));
@@ -132,97 +131,7 @@ client.on("interactionCreate", async (interaction) => {
       ephemeral: true,
     });
   }
-
-  // if (commandName === "ping") {
-  //   await interaction.reply("Pong!");
-  // } else if (commandName === "server") {
-  //   await interaction.reply("Server info.");
-  // } else if (commandName === "user") {
-  //   await interaction.reply("User info.");
-  // } else if (commandName === "queue") {
-  //   const queue = distube.getQueue(interaction.guild.id);
-  //   if (!queue) {
-  //     interaction.reply("Nothing playing right now!");
-  //   } else {
-  //     interaction.reply(
-  //       `Current queue:\n${queue.songs
-  //         .map(
-  //           (song, id) =>
-  //             `**${id ? id : "Playing"}**. ${song.name} - \`${
-  //               song.formattedDuration
-  //             }\``
-  //         )
-  //         .slice(0, 10)
-  //         .join("\n")}`
-  //     );
-  //   }
-  // } else if (commandName === "filter") {
-  //   const subCommand = interaction.options.getSubcommand();
-  //   const queue = distube.getQueue(interaction.guild.id);
-
-  //   if (!queue) {
-  //     interaction.reply("Nothing playing right now!");
-  //     return;
-  //   }
-
-  //   if (subCommand === "reset") {
-  //     clearFilters(queue);
-  //     interaction.reply(getCurrentFiltersMsg(queue));
-  //     return;
-  //   } else if (subCommand === "current") {
-  //     interaction.reply(getCurrentFiltersMsg(queue));
-  //     return;
-  //   }
-
-  //   const filterName = interaction.options.getString("filter-name");
-
-  //   console.log(filterName);
-  //   if (
-  //     !filterName ||
-  //     ![
-  //       "3d",
-  //       "nightcore",
-  //       "bassboost",
-  //       "echo",
-  //       "karaoke",
-  //       "vaporwave",
-  //     ].includes(filterName)
-  //   ) {
-  //     interaction.reply("Incorrect filter name");
-  //     return;
-  //   }
-
-  //   if (subCommand === "add") {
-  //     addFilter(filterName, queue);
-  //   } else if (subCommand === "remove") {
-  //     removeFilter(filterName, queue);
-  //   }
-
-  //   interaction.reply(getCurrentFiltersMsg(queue));
-  // }
 });
-
-function addFilter(filterName: string, queue: Queue) {
-  if (!queue.filters.has(filterName)) {
-    queue.filters.add(filterName);
-  }
-}
-
-function removeFilter(filterName: string, queue: Queue) {
-  if (queue.filters.has(filterName)) {
-    queue.filters.remove(filterName);
-  }
-}
-
-function clearFilters(queue: Queue) {
-  if (queue.filters.size > 0) {
-    queue.filters.clear();
-  }
-}
-
-function getCurrentFiltersMsg(queue: Queue): string {
-  return `Current queue filter: ${queue.filters.names.join(", ") || "Off"}`;
-}
 
 const status = (queue: any) => {
   return `Volume: \`${queue.volume}%\` | Filter: \`${
